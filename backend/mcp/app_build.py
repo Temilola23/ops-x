@@ -16,7 +16,7 @@ from typing import List, Dict, Optional
 import asyncio
 
 # Import our integrations
-from integrations.gemini_api import gemini_generator
+from integrations.gemini_code_generator import gemini_code_generator
 from integrations.github_api import github_client  
 from integrations.vercel_api import vercel_client
 
@@ -82,13 +82,20 @@ async def build_app(request: AppBuildRequest, background_tasks: BackgroundTasks)
         # Step 1: Generate code with Gemini
         print(f"Generating code for: {project_name}")
         
-        if not gemini_generator:
-            raise HTTPException(
-                status_code=500,
-                detail="Gemini API not configured. Set GEMINI_API_KEY environment variable."
-            )
+        # Initialize generator if needed
+        if gemini_code_generator is None:
+            from integrations.gemini_code_generator import GeminiCodeGenerator
+            try:
+                generator = GeminiCodeGenerator()
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Gemini API not configured. Set GEMINI_API_KEY environment variable."
+                )
+        else:
+            generator = gemini_code_generator
         
-        files = await gemini_generator.generate_app(full_prompt, project_name)
+        files = generator.generate_nextjs_app(project_name, full_prompt)
         
         if not files:
             raise HTTPException(

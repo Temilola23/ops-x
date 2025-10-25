@@ -23,6 +23,7 @@ yarn-error.log*
 
 # Environment variables
 .env
+my_env
 .env.local
 .env.*.local
 scripts/.env
