@@ -61,13 +61,17 @@ class ApiResponse(BaseModel):
 async def create_project(request: CreateProjectRequest, db: Session = Depends(get_db)):
     """Create a new project"""
     
-    # Get or create user
+    # Get or create anonymous user (session-based)
+    # For MVP: Users don't need accounts to generate apps!
+    # They only sign up when they want to invite team members
     user = db.query(User).filter(User.email == request.user_email).first()
     if not user:
+        # Create anonymous user with session_id
+        import uuid
+        session_id = f"anon_{uuid.uuid4().hex[:16]}"
         user = User(
-            email=request.user_email,
-            name="Demo User",
-            session_id=f"session_{datetime.utcnow().timestamp()}"
+            session_id=session_id,
+            email=request.user_email  # Store email for potential signup later
         )
         db.add(user)
         db.flush()  # Get user ID

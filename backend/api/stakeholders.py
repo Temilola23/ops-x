@@ -10,7 +10,8 @@ from typing import Optional
 from datetime import datetime
 
 from database import get_db
-from models import Stakeholder, Project
+from models import Stakeholder, Project, User
+from integrations.email_service import send_team_invite_email
 
 router = APIRouter()
 
@@ -218,3 +219,130 @@ async def remove_stakeholder(
         "data": {"deleted": stakeholder_id},
         "error": None
     }
+
+
+# ==================== TEAM INVITATION ====================
+
+class InviteTeamMemberRequest(BaseModel):
+    name: str
+    email: str
+    role: str
+
+
+@router.post("/projects/{project_id}/invite")
+async def invite_team_member(
+    project_id: int,
+    request: InviteTeamMemberRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Invite team member to project
+    
+    Flow:
+    1. Create stakeholder record
+    2. Generate invite OTP
+    3. Send email (for production) or return OTP (for demo)
+    4. When user signs up with email, link to stakeholder
+    """
+    try:
+        # Verify project exists
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            return {
+                "success": False,
+                "data": None,
+                "error": "Project not found"
+            }
+        
+        # Check if stakeholder already exists
+        existing = db.query(Stakeholder).filter(
+            Stakeholder.project_id == project_id,
+            Stakeholder.email == request.email
+        ).first()
+        
+        if existing:
+            return {
+                "success": False,
+                "data": None,
+                "error": "Team member already invited"
+            }
+        
+        # Create stakeholder
+        stakeholder = Stakeholder(
+            project_id=project_id,
+            name=request.name,
+            email=request.email,
+            role=request.role,
+            user_id=None  # Will be linked when user signs up
+        )
+        
+        db.add(stakeholder)
+        db.commit()
+        db.refresh(stakeholder)
+        
+        # Generate invite OTP
+        from datetime import timezone, timedelta
+        import secrets
+        
+        otp = str(secrets.randbelow(999999)).zfill(6)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+        
+        # Store OTP in auth storage (shared with auth.py)
+        from api.auth import otp_storage
+        otp_storage[request.email] = {
+            "otp": otp,
+            "expires_at": expires_at,
+            "name": request.name,
+            "is_existing_user": False,
+            "is_team_invite": True,
+            "project_id": project_id,
+            "stakeholder_id": stakeholder.id
+        }
+        
+        # Get inviter name (project owner)
+        inviter = db.query(User).filter(User.id == project.owner_id).first()
+        inviter_name = inviter.name if inviter else "Team Lead"
+        
+        # Send team invite email
+        email_sent = send_team_invite_email(
+            request.email,
+            inviter_name,
+            project.name,
+            otp,
+            request.role
+        )
+        
+        if email_sent:
+            return {
+                "success": True,
+                "data": {
+                    "stakeholder_id": stakeholder.id,
+                    "email": request.email,
+                    "role": request.role,
+                    "message": f"Invitation sent to {request.email}. They should check their inbox!"
+                },
+                "error": None
+            }
+        else:
+            # Fallback if email fails
+            return {
+                "success": True,
+                "data": {
+                    "stakeholder_id": stakeholder.id,
+                    "email": request.email,
+                    "role": request.role,
+                    "otp": otp,  # Show OTP if email failed
+                    "message": f"Invitation created. Fallback OTP (check console): {otp}"
+                },
+                "error": None
+            }
+        
+    except Exception as e:
+        print(f"Invite team member error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "success": False,
+            "data": None,
+            "error": str(e)
+        }

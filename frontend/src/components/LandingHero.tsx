@@ -1,20 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Loader2, Zap, GitBranch, Users, Rocket } from "lucide-react";
+import { Sparkles, Loader2, Zap, GitBranch, Users, Rocket, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { AuthModal } from "@/components/AuthModal";
+import { isAuthenticated, getCurrentUser, logout, type User } from "@/lib/auth";
 
 export function LandingHero() {
   const router = useRouter();
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [isBuilding, setIsBuilding] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, []);
 
   const handleGenerate = async () => {
     if (!projectName.trim() || !description.trim()) {
@@ -28,7 +40,7 @@ export function LandingHero() {
     sessionStorage.setItem("opsx_project_name", projectName);
     sessionStorage.setItem("opsx_project_description", description);
 
-    router.push("/build");
+    router.push("/scaffold");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -38,10 +50,47 @@ export function LandingHero() {
     }
   };
 
+  const handleAuthSuccess = (user: User) => {
+    setCurrentUser(user);
+    toast.success(`Welcome, ${user.name}!`);
+    // User can now navigate to team dashboard if they have a project
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-purple-600" />
+            <h1 className="text-xl font-bold">OPS-X</h1>
+          </div>
+          <div>
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">
+                  {currentUser.name}
+                </span>
+                <Button variant="outline" size="sm" onClick={logout}>
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAuthModal(true)}
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign In
+              </Button>
+            )}
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="flex-1 flex items-center justify-center px-4 py-20">
+      <section className="flex-1 flex items-center justify-center px-4 py-20 mt-16">
         <div className="max-w-4xl w-full space-y-12">
           {/* Header */}
           <div className="text-center space-y-6">
@@ -172,6 +221,13 @@ export function LandingHero() {
           <span>Powered by v0.dev, Google Gemini, Fetch.ai & more</span>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

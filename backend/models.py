@@ -10,19 +10,40 @@ from database import Base
 
 
 class User(Base):
-    """User/Admin accounts"""
+    """User/Admin accounts - supports both anonymous (session_id only) and authenticated users"""
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    session_id = Column(String(255), unique=True, index=True)
-    name = Column(String(255))
+    
+    # For anonymous users (MVP flow)
+    session_id = Column(String(255), unique=True, index=True, nullable=True)
+    
+    # For authenticated users (after sign up)
+    email = Column(String(255), unique=True, index=True, nullable=True)
+    hashed_password = Column(String(255), nullable=True)
+    name = Column(String(255), nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
     projects = relationship("Project", back_populates="owner")
     chat_messages = relationship("ChatMessage", back_populates="user")
+    auth_sessions = relationship("Session", back_populates="user")
+
+
+class Session(Base):
+    """User sessions for authentication"""
+    __tablename__ = "sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token = Column(String(255), unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    user = relationship("User", back_populates="auth_sessions")
 
 
 class Project(Base):
