@@ -75,11 +75,24 @@ async def build_app_hybrid_stream(request: AppBuildRequest):
                 })
                 
                 try:
+                    # Create streaming callback for V0 updates
+                    async def v0_stream_callback(update):
+                        # Send V0's real-time updates to frontend
+                        if update.get("type") == "v0_update":
+                            yield create_sse_event({
+                                "type": "v0_progress",
+                                "phase": "ui_generation",
+                                "message": f"V0 is writing: {update.get('content', '')[:100]}...",
+                                "accumulated": update.get('accumulated', ''),
+                                "progress": 15  # Will update dynamically
+                            })
+                    
                     # Generate UI components with V0
                     v0_files = await v0_generator.generate_full_app(
                         prompt=requirements,
                         project_name=project_name,
-                        pages=pages
+                        pages=pages,
+                        stream_callback=v0_stream_callback
                     )
                     
                     all_files.update(v0_files)
