@@ -1,16 +1,6 @@
 "use server";
 
 import { v0 } from "v0-sdk";
-
-/**
- * Server Action: Create a new v0 chat with enhanced configuration
- * This runs on the server, keeping the V0_API_KEY secure
- *
- * Uses v0 Platform API features:
- * - system context for better results
- * - modelConfiguration for control
- * - proper response handling with latestVersion
- */
 export async function createV0Chat(message: string) {
   try {
     console.log("Creating v0 chat with message:", message.substring(0, 100));
@@ -26,8 +16,6 @@ export async function createV0Chat(message: string) {
         imageGenerations: false, // Disable image generation for faster response
       },
     });
-
-    console.log("v0 chat response:", JSON.stringify(chat, null, 2));
 
     // Extract data from response according to v0 API structure
     const chatId = "id" in chat ? chat.id : "";
