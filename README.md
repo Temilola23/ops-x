@@ -474,3 +474,183 @@ Pitch Agent → script.md → Deepgram TTS → pitch.mp3
 * Use a single project .env template for quick teammate onboarding
 
 ---
+
+## 15) Project Structure
+
+```
+ops-x/
+├── README.md
+├── .env.example
+├── .gitignore
+├── docker-compose.yml        # For local development
+├── Makefile                  # Common commands
+│
+├── backend/
+│   ├── requirements.txt      # Python dependencies
+│   ├── requirements-dev.txt  # Dev dependencies
+│   ├── main.py              # FastAPI + MCP endpoint registration
+│   ├── config.py            # Configuration management
+│   ├── mcp/
+│   │   ├── __init__.py
+│   │   ├── creao_build.py
+│   │   ├── repo_patch.py
+│   │   ├── conflict_scan.py
+│   │   ├── chat_summarize.py
+│   │   ├── pitch_generate.py
+│   │   ├── yc_pack.py
+│   │   └── postman_flow.py
+│   ├── db/
+│   │   ├── __init__.py
+│   │   ├── chroma_handler.py
+│   │   ├── models.py        # SQLAlchemy/Pydantic models
+│   │   └── schemas.py
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── base_agent.py    # Base class for agents
+│   │   ├── planner_agent.py
+│   │   ├── frontend_agent.py
+│   │   ├── backend_agent.py
+│   │   ├── facilitator_agent.py
+│   │   └── pitch_agent.py
+│   ├── integrations/        # External service integrations
+│   │   ├── __init__.py
+│   │   ├── creao_api.py
+│   │   ├── github_api.py
+│   │   ├── coderabbit_api.py
+│   │   ├── janitor_api.py
+│   │   └── fetchai_api.py
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── git_api.py
+│   │   ├── postman_api.py
+│   │   ├── deepgram_api.py
+│   │   ├── auth.py          # Authentication utilities
+│   │   └── helpers.py
+│   └── tests/               # Backend tests
+│       ├── __init__.py
+│       ├── test_mcp.py
+│       ├── test_agents.py
+│       ├── test_integrations.py
+│       └── test_utils.py
+│
+├── frontend/
+│   ├── package.json         # Frontend dependencies
+│   ├── tsconfig.json        # TypeScript config
+│   ├── vite.config.ts       # Vite configuration
+│   ├── .eslintrc.json       # Linting rules
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── main.tsx         # Entry point
+│   │   ├── components/
+│   │   │   ├── ChatRoom.tsx
+│   │   │   ├── StakeholderDashboard.tsx
+│   │   │   ├── AgentPanel.tsx
+│   │   │   ├── BranchVisualizer.tsx
+│   │   │   ├── ConflictResolver.tsx
+│   │   │   └── CreaoPromptInput.tsx
+│   │   ├── hooks/           # Custom React hooks
+│   │   │   ├── useWebSocket.ts
+│   │   │   └── useAgentStatus.ts
+│   │   ├── services/
+│   │   │   ├── api.ts
+│   │   │   ├── websocket.ts
+│   │   │   └── auth.ts
+│   │   ├── types/           # TypeScript types
+│   │   │   └── index.ts
+│   │   └── styles/          # CSS/styling
+│   │       └── globals.css
+│   └── public/
+│       ├── index.html
+│       └── favicon.ico
+│
+├── opsx_agents/             # Fetch.ai agents
+│   ├── requirements.txt     # uAgents dependencies
+│   ├── uagent_config.yaml   # For Fetch.ai deployment
+│   ├── base_uagent.py       # Base class
+│   ├── planner_uagent.py
+│   ├── facilitator_uagent.py
+│   ├── frontend_uagent.py
+│   ├── backend_uagent.py
+│   └── deploy.py            # Deployment script
+│
+├── mcp_server/              # MCP server implementation
+│   ├── server.py            # MCP server setup
+│   └── handlers.py          # MCP request handlers
+│
+├── scripts/                 # Automation scripts
+│   ├── setup.sh            # Initial setup
+│   ├── deploy.sh           # Deployment script
+│   ├── test_e2e.py         # End-to-end tests
+│   └── demo_flow.py        # Demo automation
+│
+├── postman_flows/
+│   ├── opsx_flow.json      # Main flow export
+│   ├── demo_flow.json      # Demo-specific flow
+│   └── templates/          # Flow templates
+│       └── base_flow.json
+│
+├── data/
+│   ├── samples/
+│   │   ├── demo_prompt.json
+│   │   ├── test_branches.json
+│   │   └── yc_template.json
+│   └── cache/              # For caching API responses
+│       └── .gitkeep
+│
+├── docs/
+│   ├── OPS-X_README.md
+│   ├── architecture.md
+│   ├── api_reference.md    # API documentation
+│   ├── deployment.md       # Deployment guide
+│   └── demo_script.md      # Demo walkthrough
+│
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # CI pipeline
+│       └── deploy.yml      # CD pipeline
+│
+└── deployment/
+    ├── Dockerfile.backend
+    ├── Dockerfile.frontend
+    ├── kubernetes/         # K8s configs if needed
+    │   └── manifests.yaml
+    └── nginx.conf         # For production
+
+```
+
+### Key Additions:
+
+1. **Testing Infrastructure**
+   - `backend/tests/` for comprehensive testing
+   - `scripts/test_e2e.py` for end-to-end testing
+
+2. **Configuration Files**
+   - `docker-compose.yml` for local development
+   - `Makefile` for common commands
+   - TypeScript/Vite configs for frontend
+   - Python requirements files
+
+3. **Better Organization**
+   - `integrations/` separate from `utils/` for cleaner API client code
+   - `base_agent.py` and `base_uagent.py` for DRY principles
+   - `types/` directory in frontend for TypeScript interfaces
+
+4. **MCP Server**
+   - Dedicated `mcp_server/` directory since MCP is core to your architecture
+
+5. **Deployment & CI/CD**
+   - GitHub Actions workflows
+   - Docker configurations
+   - Deployment scripts
+
+6. **Documentation**
+   - API reference documentation
+   - Deployment guide
+   - Demo script for hackathon presentation
+
+7. **Development Tools**
+   - `scripts/` directory for automation
+   - Cache directory for API response caching (important for demos)
+   - `.gitignore` for proper version control
+
+This structure supports both rapid hackathon development and potential post-hackathon scaling. The modular design allows team members to work independently while maintaining clear interfaces between components.

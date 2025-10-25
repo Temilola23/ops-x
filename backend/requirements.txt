@@ -1,0 +1,28 @@
+# Core dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-dotenv==1.0.0
+
+# Database and vector store
+chromadb==0.4.18
+sqlalchemy==2.0.23
+
+# AI/ML
+openai==1.3.5
+anthropic==0.7.7
+langchain==0.0.340
+
+# External APIs
+httpx==0.25.2
+PyGithub==2.1.1
+postman-sdk==0.0.1  # placeholder - might need custom implementation
+
+# Agent frameworks
+uagents==0.11.0  # Fetch.ai uAgents
+
+# Utilities
+python-multipart==0.0.6
+aiofiles==23.2.1
+websockets==12.0
+pyyaml==6.0.1
