@@ -39,59 +39,129 @@ class GeminiCodeGenerator:
             Dictionary mapping filename -> file content
         """
         
-        # Be EXTREMELY specific about what we want
-        prompt = f"""You are generating a PRODUCTION Next.js 14 application that will be deployed to a real server and demoed to judges.
+        # Ultra-specific prompt based on Gemini best practices
+        prompt = f"""<ROLE>
+You are an expert full-stack developer generating a PRODUCTION Next.js 14 application for immediate deployment and live demo at a hackathon.
+</ROLE>
 
-PROJECT: {project_name}
-USER WANTS: {user_requirements}
+<PROJECT_DETAILS>
+Project Name: {project_name}
+Requirements: {user_requirements}
+</PROJECT_DETAILS>
 
-CRITICAL: This is for a LIVE DEMO. Everything must actually work. No placeholders, no TODOs, no example data.
+<CRITICAL_RULES>
+This code will be:
+1. Git pushed to GitHub in 60 seconds
+2. Auto-deployed to Vercel production
+3. Demoed LIVE to hackathon judges
+4. Used in front of a real audience
 
-Generate a complete, working Next.js 14 app with:
+THEREFORE:
+- NO database setup required (use in-memory arrays or localStorage)
+- NO external APIs (unless it's the core feature)
+- NO Prisma, no .env files, no Docker
+- NO placeholder text like "Example 1", "Sample Task", "Test Data"
+- NO comments like "TODO: Add logic here"
+- EVERY function must be 100% implemented
+- EVERY feature requested must actually work
+</CRITICAL_RULES>
 
-1. REAL FUNCTIONALITY - Every feature the user asked for must work
-2. REAL STATE MANAGEMENT - Use React hooks properly (useState, useEffect)
-3. REAL API ROUTES - Create working API endpoints with actual logic
-4. REAL DATA - If it's a todo app, use UUIDs and real CRUD. If it's an ideas generator, use actual random generation with localStorage
-5. BEAUTIFUL UI - Dark theme, modern design, fully responsive
-6. ZERO PLACEHOLDERS - No "Example 1", "Sample Task", "Test Item"
+<ARCHITECTURE>
+Use Next.js 14 App Router with:
+- Client components ('use client') for interactivity
+- In-memory state or localStorage for data persistence
+- API routes ONLY if needed for the specific feature
+- Tailwind CSS for styling
+- Zero external dependencies beyond: next, react, react-dom, typescript, tailwindcss
 
-REQUIRED FILES (output each one):
-- package.json (all needed dependencies)
-- app/page.tsx (main page with ALL requested features working)
-- app/layout.tsx (root layout, metadata, fonts)
-- app/globals.css (Tailwind + custom styles)
-- app/api/[...]/route.ts (any API routes needed)
-- components/*.tsx (any reusable components)
-- tailwind.config.ts
-- tsconfig.json
-- next.config.js
+Keep it SIMPLE and FUNCTIONAL.
+</ARCHITECTURE>
 
-OUTPUT FORMAT:
-For each file, use EXACTLY this format:
+<WHAT_TO_BUILD>
+{user_requirements}
+
+If user wants a todo app: Build real CRUD with UUID generation, actual state management
+If user wants an idea generator: Build real random generation with clever algorithms
+If user wants a dashboard: Build real charts with mock but realistic data
+If user wants a game: Build actual game logic that works
+
+Match the vibe they request (dark/gothic/modern/minimal) in the Tailwind classes.
+</WHAT_TO_BUILD>
+
+<OUTPUT_FORMAT>
+Output ONLY the files, nothing else. Use this EXACT format:
 
 ===FILE: filename===
-[file content here]
+[complete file content - no truncation, no "..."]
 ===END===
 
-EXAMPLE OUTPUT:
-===FILE: package.json===
-{{
-  "name": "my-app",
-  "version": "0.1.0",
-  ...
-}}
-===END===
+REQUIRED FILES:
+1. package.json
+2. app/page.tsx (main UI with ALL features working)
+3. app/layout.tsx
+4. app/globals.css
+5. tailwind.config.ts
+6. tsconfig.json
+7. next.config.js
+8. components/[ComponentName].tsx (if needed for organization)
+9. app/api/[endpoint]/route.ts (ONLY if needed for the feature)
+
+DO NOT include: .env, prisma/schema.prisma, docker-compose.yml, README.md
+</OUTPUT_FORMAT>
+
+<EXAMPLE_GOOD>
+For a "gothic noir todo app":
 
 ===FILE: app/page.tsx===
 'use client';
-import {{ useState }} from 'react';
-...
+import {{ useState, useEffect }} from 'react';
+
+interface Todo {{
+  id: string;
+  text: string;
+  done: boolean;
+  createdAt: number;
+}}
+
+export default function Home() {{
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [input, setInput] = useState('');
+  
+  useEffect(() => {{
+    const saved = localStorage.getItem('todos');
+    if (saved) setTodos(JSON.parse(saved));
+  }}, []);
+  
+  const addTodo = () => {{
+    if (!input.trim()) return;
+    const newTodo = {{
+      id: crypto.randomUUID(),
+      text: input,
+      done: false,
+      createdAt: Date.now()
+    }};
+    const updated = [newTodo, ...todos];
+    setTodos(updated);
+    localStorage.setItem('todos', JSON.stringify(updated));
+    setInput('');
+  }};
+  
+  // ... rest of REAL implementation
+}}
 ===END===
+</EXAMPLE_GOOD>
 
-Now generate the COMPLETE, WORKING application for: {user_requirements}
+<EXAMPLE_BAD>
+DON'T DO THIS:
+- const todos = ['Example 1', 'Example 2'];  ❌ HARDCODED
+- // TODO: Implement save logic  ❌ NOT IMPLEMENTED
+- <div>Placeholder content</div>  ❌ PLACEHOLDER
+- Using Prisma without setup  ❌ WON'T WORK
+</EXAMPLE_BAD>
 
-Remember: This will be run in a LIVE DEMO. Make it impressive and functional, not a template."""
+Now generate the COMPLETE, WORKING, PRODUCTION-READY app for: {project_name}
+
+Remember: Real demo in 60 seconds. Make it work."""
 
         try:
             print(f"Generating code for '{project_name}'...")
