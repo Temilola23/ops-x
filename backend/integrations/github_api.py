@@ -29,7 +29,8 @@ class GitHubAPIClient:
     async def create_repo(self, name: str, description: str, private: bool = False) -> Dict:
         """Create a new GitHub repository"""
         
-        async with httpx.AsyncClient() as client:
+        # 30 second timeout for repo creation
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 f"{self.base_url}/user/repos",
                 headers=self.headers,
@@ -62,7 +63,7 @@ class GitHubAPIClient:
     async def get_default_branch_sha(self, repo_full_name: str) -> Optional[str]:
         """Get the SHA of the default branch"""
         
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
                 f"{self.base_url}/repos/{repo_full_name}/git/refs/heads/main",
                 headers=self.headers
@@ -96,7 +97,8 @@ class GitHubAPIClient:
         content_bytes = content.encode('utf-8')
         content_base64 = base64.b64encode(content_bytes).decode('utf-8')
         
-        async with httpx.AsyncClient() as client:
+        # 20 second timeout per file operation
+        async with httpx.AsyncClient(timeout=20.0) as client:
             # Check if file exists
             get_response = await client.get(
                 f"{self.base_url}/repos/{repo_full_name}/contents/{file_path}",
@@ -203,26 +205,52 @@ class GitHubAPIClient:
     ) -> Dict:
         """Push multiple files to a repository"""
         
+        print(f"\nPushing {len(files)} files to {repo_full_name}...")
         results = []
+        failed_files = []
         
-        for file_path, content in files.items():
-            result = await self.create_or_update_file(
-                repo_full_name,
-                file_path,
-                content,
-                commit_message,
-                branch
-            )
-            results.append({
-                "file": file_path,
-                "success": result["success"]
-            })
+        for i, (file_path, content) in enumerate(files.items(), 1):
+            print(f"  [{i}/{len(files)}] Pushing {file_path}...")
+            
+            try:
+                result = await self.create_or_update_file(
+                    repo_full_name,
+                    file_path,
+                    content,
+                    commit_message,
+                    branch
+                )
+                
+                if result["success"]:
+                    print(f"    ✓ {file_path}")
+                else:
+                    print(f"    ✗ {file_path}: {result.get('error', 'Unknown error')}")
+                    failed_files.append(file_path)
+                
+                results.append({
+                    "file": file_path,
+                    "success": result["success"]
+                })
+            except Exception as e:
+                print(f"    ✗ {file_path}: Exception - {str(e)}")
+                failed_files.append(file_path)
+                results.append({
+                    "file": file_path,
+                    "success": False,
+                    "error": str(e)
+                })
         
         all_successful = all(r["success"] for r in results)
         
+        if all_successful:
+            print(f"✓ Successfully pushed all {len(files)} files!")
+        else:
+            print(f"⚠ Pushed {len(files) - len(failed_files)}/{len(files)} files. Failed: {failed_files}")
+        
         return {
             "success": all_successful,
-            "results": results
+            "results": results,
+            "failed_files": failed_files
         }
 
 
