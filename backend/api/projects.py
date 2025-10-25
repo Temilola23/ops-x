@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from database import get_db
 from models import Project, User
@@ -61,13 +61,17 @@ class ApiResponse(BaseModel):
 async def create_project(request: CreateProjectRequest, db: Session = Depends(get_db)):
     """Create a new project"""
     
-    # Get or create user
+    # Get or create anonymous user (session-based)
+    # For MVP: Users don't need accounts to generate apps!
+    # They only sign up when they want to invite team members
     user = db.query(User).filter(User.email == request.user_email).first()
     if not user:
+        # Create anonymous user with session_id
+        import uuid
+        session_id = f"anon_{uuid.uuid4().hex[:16]}"
         user = User(
-            email=request.user_email,
-            name="Demo User",
-            session_id=f"session_{datetime.utcnow().timestamp()}"
+            session_id=session_id,
+            email=request.user_email  # Store email for potential signup later
         )
         db.add(user)
         db.flush()  # Get user ID
@@ -273,7 +277,7 @@ async def get_project_agents(project_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/projects/save-to-github")
-async def save_to_github(request: SaveToGitHubRequest):
+async def save_to_github(request: SaveToGitHubRequest, db: Session = Depends(get_db)):
     """
     Save v0-generated code to GitHub
     
@@ -285,14 +289,13 @@ async def save_to_github(request: SaveToGitHubRequest):
     """
     try:
         # Verify project exists
-        if request.project_id not in projects_db:
+        project = db.query(Project).filter(Project.id == request.project_id).first()
+        if not project:
             return {
                 "success": False,
                 "error": "Project not found",
                 "data": None
             }
-        
-        project = projects_db[request.project_id]
         
         # Sanitize repo name (GitHub requirements)
         repo_name = request.project_name.lower().replace(" ", "-").replace("_", "-")
@@ -377,16 +380,14 @@ This project was created using the One-Prompt Startup Platform.
         print(f"Pushed {len(files_dict)} files successfully")
         
         # 5. Update project in database
-        project["repo_url"] = repo_url
-        project["v0_chat_id"] = request.v0_chat_id
-        project["v0_preview_url"] = request.v0_preview_url
-        project["status"] = "built"
-        project["default_branch"] = default_branch
-        project["updated_at"] = datetime.utcnow().isoformat()
+        project.github_repo = repo_url
+        project.status = "built"
+        project.updated_at = datetime.now(timezone.utc)
         
-        projects_db[request.project_id] = project
+        db.commit()
+        db.refresh(project)
         
-        print(f"🎉 Project saved to GitHub successfully!")
+        print(f"Project saved to GitHub successfully!")
         
         # 6. Return success with repo info
         return {
@@ -396,7 +397,12 @@ This project was created using the One-Prompt Startup Platform.
                 "repo_full_name": repo_full_name,
                 "default_branch": default_branch,
                 "files_pushed": len(files_dict),
-                "project": project
+                "project": {
+                    "id": project.id,
+                    "name": project.name,
+                    "github_repo": project.github_repo,
+                    "status": project.status
+                }
             },
             "error": None
         }

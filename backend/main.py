@@ -40,7 +40,7 @@ from mcp import (
 )
 
 # Import REST API endpoints
-from api import projects, stakeholders, branches
+from api import projects, stakeholders, branches, auth
 
 
 @asynccontextmanager
@@ -94,6 +94,7 @@ app.add_middleware(
 
 
 # Register REST API endpoints
+app.include_router(auth.router, prefix="/api", tags=["Authentication API"])
 app.include_router(projects.router, prefix="/api", tags=["Projects API"])
 app.include_router(stakeholders.router, prefix="/api", tags=["Stakeholders API"])
 app.include_router(branches.router, prefix="/api", tags=["Branches API"])
