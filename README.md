@@ -475,7 +475,64 @@ Pitch Agent → script.md → Deepgram TTS → pitch.mp3
 
 ---
 
-## 15) Project Structure
+## 15) Sponsor-Specific Architecture Updates
+
+### Key Sponsor Integrations
+
+**Creao AI** (Core Build Engine)
+- Custom MCP integration required for the $4K prize
+- All build operations through Creao's vibe-coding platform
+- Register OPS-X as a custom API on Creao
+
+**Janitor AI** ($200K Internship Prize)
+- Powers our multiplayer refinement room
+- 25K context window with JLLM API
+- Solves multi-user chat dynamics challenge
+
+**Fetch.ai** ($5K + Internships)
+- All agents deployed on Agentverse
+- Chat protocol for ASI:One discovery
+- Claude integration for reasoning
+
+**Mastra** (TypeScript Agent Framework)
+- Frontend specialist agent in TypeScript
+- Modern JS stack for agent development
+- Integration with React components
+
+### Updated System Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        OPS-X PLATFORM WITH SPONSOR TECH                   │
+├──────────────────────────────────────────────────────────────────────────┤
+│  Creao Vibe-Coding  →  Custom MCP  →  Deployed MVP                       │
+│        │                    │                │                            │
+│        ▼                    ▼                ▼                            │
+│  MCP.creao.build_app  ◄─────────  Builder Agent (Fetch.ai uAgents)       │
+│        │                                     │                            │
+│        ├────────► GitHub VCS ◄──────────────┤                            │
+│        │          (CodeRabbit Reviews)       │                            │
+│        ▼                                     ▼                            │
+│  Stakeholder Portal         Janitor AI Multiplayer Room (25K context)    │
+│  FE branch | BE branch      Founder, FE, BE, Investor roles              │
+│    │           │            Chroma: Role-aware vector storage            │
+│    ▼           ▼                            │                             │
+│  Mastra FE    BE Agent                      ▼                             │
+│  (TypeScript)  (Python)     MCP.chat.summarize_and_index                 │
+│    │           │                                                          │
+│    └─► MCP.repo.patch ──► PRs ──► CodeRabbit ──► MCP.conflict.scan      │
+│                                                                           │
+│  Fetch.ai Agentverse (Chat Protocol + ASI:One Discovery)                 │
+│         │                                                                 │
+│         ├─► Planner Agent ──► Pitch Agent ──► Deepgram TTS              │
+│         │                           │                                     │
+│         └─► Facilitator Agent      └─► MCP.yc.generate_pack             │
+│                                                                           │
+│  Postman Flows ──► Replayable Action URL for Judges                      │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+## 16) Project Structure
 
 ```
 ops-x/
