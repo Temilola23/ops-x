@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosError } from "axios";
 import type {
   ApiResponse,
   AppBuildRequest,
+  V0BuildRequest,
   AppBuildResponse,
   RepoPatchRequest,
   RepoPatchResponse,
@@ -56,7 +57,7 @@ class ApiClient {
 
   // MCP Endpoints
   async buildApp(
-    request: AppBuildRequest
+    request: V0BuildRequest
   ): Promise<ApiResponse<AppBuildResponse>> {
     // Use PURE V0 endpoint - NO GEMINI
     const { data } = await this.client.post("/mcp/app/build/v0", request);

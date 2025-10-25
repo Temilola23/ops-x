@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { AppBuildRequest } from "@/types";
+import type { V0BuildRequest } from "@/types";
 
 interface BuildStatus {
   type: string;
@@ -23,7 +23,7 @@ export function useStreamingBuild() {
   const [isBuilding, setIsBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const startBuild = useCallback(async (request: AppBuildRequest) => {
+  const startBuild = useCallback(async (request: V0BuildRequest) => {
     setIsBuilding(true);
     setError(null);
     setFiles([]);
@@ -38,10 +38,7 @@ export function useStreamingBuild() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            ...request,
-            use_v0: true, // Enable V0 for beautiful UI
-          }),
+          body: JSON.stringify(request),
         }
       );
 
