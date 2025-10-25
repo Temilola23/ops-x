@@ -4,16 +4,33 @@ Main FastAPI application with MCP endpoint registration
 """
 
 import os
+import sys
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
+# CRITICAL: Load environment variables BEFORE importing any modules
+# that need API keys (gemini, github, etc.)
+env_path = Path(__file__).parent.parent / "scripts" / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f" Loaded environment from {env_path}")
+else:
+    load_dotenv()
+    print(" Loading .env from current directory")
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# NOW import modules (after env is loaded)
 # Import MCP endpoints
 from mcp import (
-    app_build,
-    app_build_hybrid,
-    app_build_v0,  # PURE V0 - NO GEMINI
+    # V0 build endpoints DISABLED - using frontend V0 SDK instead
+    # app_build,
+    # app_build_hybrid,
+    # app_build_v0,
     repo_patch,
     conflict_scan,
     chat_summarize,
@@ -23,32 +40,37 @@ from mcp import (
 )
 
 # Import REST API endpoints
-from api import projects
-
-# Load environment variables
-# Look for .env in scripts/ directory first, then current directory
-import sys
-from pathlib import Path
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-# Load .env from scripts/ directory
-env_path = Path(__file__).parent.parent / "scripts" / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
-    print(f" Loaded environment from {env_path}")
-else:
-    load_dotenv()  # Try current directory
-    print(" Loading .env from current directory")
+from api import projects, stakeholders, branches
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize resources on startup"""
     print(" Starting OPS-X Backend Server...")
-    # Initialize any resources here (DB connections, etc.)
+    
+    # Initialize database
+    try:
+        from database import init_db, engine
+        from integrations.chroma_client import chroma_search
+        
+        print("Initializing PostgreSQL database...")
+        init_db()
+        
+        # Test connection
+        with engine.connect() as conn:
+            print("PostgreSQL connection successful!")
+        
+        if chroma_search:
+            print(f"Chroma DB initialized: {chroma_search.get_stats()}")
+        else:
+            print("WARNING: Chroma DB not available")
+        
+    except Exception as e:
+        print(f"WARNING: Database initialization failed: {e}")
+        print("Make sure PostgreSQL is running and DATABASE_URL is correct")
+    
     yield
+    
     # Cleanup on shutdown
     print(" Shutting down OPS-X Backend Server...")
 
@@ -73,11 +95,14 @@ app.add_middleware(
 
 # Register REST API endpoints
 app.include_router(projects.router, prefix="/api", tags=["Projects API"])
+app.include_router(stakeholders.router, prefix="/api", tags=["Stakeholders API"])
+app.include_router(branches.router, prefix="/api", tags=["Branches API"])
 
 # Register MCP endpoints
-app.include_router(app_build_v0.router, tags=["MCP - PURE V0 BUILD (RECOMMENDED)"])  # ⭐ USE THIS ONE
-app.include_router(app_build.router, prefix="/mcp", tags=["MCP - App Build (Legacy Gemini)"])
-app.include_router(app_build_hybrid.router, prefix="/mcp", tags=["MCP - Hybrid Build (V0 + Gemini - BROKEN)"])
+# V0 build endpoints DISABLED - frontend handles V0 with TypeScript SDK
+# app.include_router(app_build_v0.router, tags=["MCP - PURE V0 BUILD (RECOMMENDED)"])
+# app.include_router(app_build.router, prefix="/mcp", tags=["MCP - App Build (Legacy Gemini)"])
+# app.include_router(app_build_hybrid.router, prefix="/mcp", tags=["MCP - Hybrid Build (V0 + Gemini - BROKEN)"])
 app.include_router(repo_patch.router, prefix="/mcp", tags=["MCP - Repository"])
 app.include_router(conflict_scan.router, prefix="/mcp", tags=["MCP - Conflict"])
 app.include_router(chat_summarize.router, prefix="/mcp", tags=["MCP - Chat"])

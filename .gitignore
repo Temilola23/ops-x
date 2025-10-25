@@ -46,6 +46,12 @@ build/
 data/cache/*
 !data/cache/.gitkeep
 
+# Database
+chroma_data/
+*.db
+*.sqlite
+*.sqlite3
+
 # Coverage
 htmlcov/
 .coverage

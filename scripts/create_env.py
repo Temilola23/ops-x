@@ -16,6 +16,8 @@ DEFAULT_ENV = {
     "JANITOR_API_KEY": "calhacks2047",
     "FETCHAI_API_KEY": "sk_f1565b8c1c934a7ab641446e5b1f4159fb14f45afe964224b90e7f6cfedd55a5",
     "FETCHAI_ENDPOINT": "https://agentverse.ai",
+    "DATABASE_URL": "postgresql://localhost:5432/opsx_db",
+    "CHROMA_PERSIST_DIR": "./chroma_data",
     "CHROMA_HOST": "localhost",
     "CHROMA_PORT": "8000",
     "BACKEND_PORT": "8000",
@@ -60,7 +62,7 @@ def save_env(filepath, env_vars):
                 f.write(f"{key}={env_vars[key]}\n")
         
         f.write("\n# Database\n")
-        for key in ["CHROMA_HOST", "CHROMA_PORT"]:
+        for key in ["DATABASE_URL", "CHROMA_PERSIST_DIR", "CHROMA_HOST", "CHROMA_PORT"]:
             if key in env_vars:
                 f.write(f"{key}={env_vars[key]}\n")
         
