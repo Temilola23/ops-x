@@ -7,32 +7,32 @@ python-dotenv==1.0.0
 # Database and vector store
 chromadb==0.4.18
 sqlalchemy==2.0.23
-psycopg2-binary==2.9.9  # PostgreSQL adapter
-alembic==1.13.1  # Database migrations
-redis==5.0.1  # For caching and session management
+psycopg2-binary==2.9.9# PostgreSQL adapter
+alembic==1.13.1# Database migrations
+redis==5.0.1# For caching and session management
 
 # AI/ML
 openai==1.3.5
 anthropic==0.7.7
 langchain==0.0.340
-google-generativeai==0.3.2  # For Gemini code generation
+google-generativeai==0.3.2# For Gemini code generation
 
 # External APIs
 httpx==0.25.2
 PyGithub==2.1.1
-deepgram-sdk==3.0.0  # For TTS generation
+deepgram-sdk==3.0.0# For TTS generation
 
 # Agent frameworks
-uagents==0.13.1  # Fetch.ai uAgents (compatible with pydantic 2.8 and uvicorn 0.30+)
-cosmpy>=0.9.2  # Fetch.ai blockchain interaction
+uagents==0.13.1# Fetch.ai uAgents (compatible with pydantic 2.8 and uvicorn 0.30+)
+cosmpy>=0.9.2# Fetch.ai blockchain interaction
 
 # Utilities
 python-multipart==0.0.6
 aiofiles==23.2.1
 websockets<11.0,>=10.4
 pyyaml==6.0.1
-tenacity==8.2.3  # For retry logic
-pydantic-settings==2.3.4  # For settings management (updated for pydantic 2.8)
+tenacity==8.2.3# For retry logic
+pydantic-settings==2.3.4# For settings management (updated for pydantic 2.8)
 
 # Security and Auth
 python-jose[cryptography]==3.3.0  # JWT tokens
@@ -41,8 +41,8 @@ sendgrid==6.12.5  # Email service for OTP (replaced Resend)
 email-validator==2.3.0  # Email validation for Pydantic
 
 # Documentation and API tools
-requests==2.31.0  # Some APIs might need this
-aiohttp==3.9.1  # Alternative async HTTP client
+requests==2.31.0# Some APIs might need this
+aiohttp==3.9.1# Alternative async HTTP client
 
 # MCP (Model Context Protocol) - if available
-# mcp-python==0.1.0  # Placeholder - check if exists
+# mcp-python==0.1.0  # Placeholder - check if exists
