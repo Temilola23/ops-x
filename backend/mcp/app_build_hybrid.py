@@ -12,7 +12,7 @@ import json
 from datetime import datetime
 
 from integrations.v0_api import v0_generator
-from integrations.gemini_api import gemini_generator
+from integrations.gemini_code_generator import gemini_code_generator
 from integrations.github_api import github_client
 from integrations.vercel_api import vercel_client
 
@@ -75,24 +75,11 @@ async def build_app_hybrid_stream(request: AppBuildRequest):
                 })
                 
                 try:
-                    # Create streaming callback for V0 updates
-                    async def v0_stream_callback(update):
-                        # Send V0's real-time updates to frontend
-                        if update.get("type") == "v0_update":
-                            yield create_sse_event({
-                                "type": "v0_progress",
-                                "phase": "ui_generation",
-                                "message": f"V0 is writing: {update.get('content', '')[:100]}...",
-                                "accumulated": update.get('accumulated', ''),
-                                "progress": 15  # Will update dynamically
-                            })
-                    
-                    # Generate UI components with V0
+                    # Generate UI components with V0 (no streaming for now - simpler)
                     v0_files = await v0_generator.generate_full_app(
                         prompt=requirements,
                         project_name=project_name,
-                        pages=pages,
-                        stream_callback=v0_stream_callback
+                        pages=pages
                     )
                     
                     all_files.update(v0_files)
@@ -168,10 +155,17 @@ async def build_app_hybrid_stream(request: AppBuildRequest):
                 - Configuration files
                 """
             
+            # Initialize Gemini generator if needed
+            if gemini_code_generator is None:
+                from integrations.gemini_code_generator import GeminiCodeGenerator
+                generator = GeminiCodeGenerator()
+            else:
+                generator = gemini_code_generator
+            
             # Generate with Gemini
-            gemini_files = await gemini_generator.generate_app(
-                prompt=gemini_prompt,
-                project_name=project_name
+            gemini_files = generator.generate_nextjs_app(
+                project_name=project_name,
+                user_requirements=gemini_prompt
             )
             
             # Merge Gemini files (don't overwrite V0 UI files)
