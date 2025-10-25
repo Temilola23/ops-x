@@ -21,7 +21,21 @@ from mcp import (
 )
 
 # Load environment variables
-load_dotenv()
+# Look for .env in scripts/ directory first, then current directory
+import sys
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Load .env from scripts/ directory
+env_path = Path(__file__).parent.parent / "scripts" / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f"✅ Loaded environment from {env_path}")
+else:
+    load_dotenv()  # Try current directory
+    print("⚠️  Loading .env from current directory")
 
 
 @asynccontextmanager
