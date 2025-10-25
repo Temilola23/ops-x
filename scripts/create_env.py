@@ -6,11 +6,11 @@ import os
 # Default values
 DEFAULT_ENV = {
     "CREAO_INVITATION_CODE": "CALHAC",
-    "GITHUB_TOKEN": "your_github_token_here",
+    "GITHUB_TOKEN": "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",
     "POSTMAN_API_KEY": "your_postman_api_key_here",
     "DEEPGRAM_API_KEY": "your_deepgram_api_key_here",
-    "GEMINI_API_KEY": "your_gemini_api_key_here",
-    "V0_API_KEY": "your_v0_api_key_here",
+    "GEMINI_API_KEY": "AIzaSyCLJ9Yf_g6R8VLpIqjOPJefGv4sGw5TGA4",
+    "V0_API_KEY": "V0_API_KEY=v1:RPFdMvkqfXKjtpuSXZsVMxU8:MvPE7ACUpMlqJ81LdAgj20VA",
     "VERCEL_TOKEN": "your_vercel_token_here",
     "JANITOR_API_ENDPOINT": "https://janitorai.com/hackathon/completions",
     "JANITOR_API_KEY": "calhacks2047",
