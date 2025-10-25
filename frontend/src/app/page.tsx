@@ -11,7 +11,8 @@ export default function HomePage() {
   const [showPrompt, setShowPrompt] = useState(false);
 
   const handleProjectCreated = (projectId: string) => {
-    router.push(`/dashboard/${projectId}`);
+    // Open dashboard in new tab so user can still see the preview
+    window.open(`/dashboard/${projectId}`, '_blank');
   };
 
   // Show full-screen build view when building

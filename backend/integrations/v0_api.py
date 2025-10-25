@@ -5,7 +5,7 @@ Uses V0's Model API for React/Next.js component generation
 
 import os
 import httpx
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 import json
 
 
@@ -23,7 +23,8 @@ class V0Generator:
         self,
         prompt: str,
         component_name: str = "Component",
-        framework: str = "nextjs"
+        framework: str = "nextjs",
+        stream_callback: Optional[Callable] = None
     ) -> Optional[Dict[str, str]]:
         """
         Generate a single UI component with V0 using the Model API
@@ -37,51 +38,126 @@ class V0Generator:
             # V0 Model API endpoint - correct path
             url = f"{self.base_url}/chat/completions"
             
+            # Enable streaming if callback provided
+            stream = stream_callback is not None
+            
             async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post(
-                    url,
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": "v0",
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": prompt
-                            }
-                        ],
-                        "max_tokens": 4096
-                    }
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    # V0 uses OpenAI format - extract from choices
-                    choices = data.get("choices", [])
-                    if choices and len(choices) > 0:
-                        content = choices[0].get("message", {}).get("content", "")
-                        if content:
-                            # Remove thinking tags if present
-                            import re
-                            # Remove <Thinking>...</Thinking> blocks
-                            content = re.sub(r'<Thinking>.*?</Thinking>', '', content, flags=re.DOTALL)
-                            # Extract code from markdown blocks if present
-                            code_match = re.search(r'```(?:tsx|typescript|jsx|javascript)?\n(.*?)```', content, re.DOTALL)
-                            if code_match:
-                                content = code_match.group(1).strip()
+                if stream:
+                    # Streaming request
+                    response = await client.post(
+                        url,
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": "v0",
+                            "messages": [
+                                {
+                                    "role": "user",
+                                    "content": prompt
+                                }
+                            ],
+                            "max_tokens": 4096,
+                            "stream": True
+                        }
+                    )
+                    
+                    # Process streaming response
+                    full_content = ""
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                break
                             
-                            return {
-                                "filename": f"components/{component_name}.tsx",
-                                "content": content,
-                                "preview_url": "",  # V0 doesn't return preview URL in this format
-                            }
-                    print("V0 API returned no content")
-                    return None
+                            try:
+                                import json
+                                data = json.loads(data_str)
+                                choices = data.get("choices", [])
+                                if choices and len(choices) > 0:
+                                    delta = choices[0].get("delta", {})
+                                    content = delta.get("content", "")
+                                    if content:
+                                        full_content += content
+                                        # Send streaming update
+                                        if stream_callback:
+                                            await stream_callback({
+                                                "type": "v0_update",
+                                                "content": content,
+                                                "accumulated": full_content
+                                            })
+                            except json.JSONDecodeError:
+                                continue
+                    
+                    # Process final content
+                    content = full_content
+                    
+                    # Clean up content
+                    if content:
+                        # Remove thinking tags if present
+                        import re
+                        content = re.sub(r'<Thinking>.*?</Thinking>', '', content, flags=re.DOTALL)
+                        # Extract code from markdown blocks if present
+                        code_match = re.search(r'```(?:tsx|typescript|jsx|javascript)?\n(.*?)```', content, re.DOTALL)
+                        if code_match:
+                            content = code_match.group(1).strip()
+                        
+                        return {
+                            "filename": f"components/{component_name}.tsx",
+                            "content": content,
+                            "preview_url": "",
+                        }
+                    else:
+                        print("V0 streaming returned no content")
+                        return None
+                        
                 else:
-                    print(f"V0 API error: {response.status_code} - {response.text}")
-                    return None
+                    # Non-streaming request
+                    response = await client.post(
+                        url,
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": "v0",
+                            "messages": [
+                                {
+                                    "role": "user",
+                                    "content": prompt
+                                }
+                            ],
+                            "max_tokens": 4096
+                        }
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        # V0 uses OpenAI format - extract from choices
+                        choices = data.get("choices", [])
+                        if choices and len(choices) > 0:
+                            content = choices[0].get("message", {}).get("content", "")
+                            if content:
+                                # Remove thinking tags if present
+                                import re
+                                # Remove <Thinking>...</Thinking> blocks
+                                content = re.sub(r'<Thinking>.*?</Thinking>', '', content, flags=re.DOTALL)
+                                # Extract code from markdown blocks if present
+                                code_match = re.search(r'```(?:tsx|typescript|jsx|javascript)?\n(.*?)```', content, re.DOTALL)
+                                if code_match:
+                                    content = code_match.group(1).strip()
+                                
+                                return {
+                                    "filename": f"components/{component_name}.tsx",
+                                    "content": content,
+                                    "preview_url": "",  # V0 doesn't return preview URL in this format
+                                }
+                        print("V0 API returned no content")
+                        return None
+                    else:
+                        print(f"V0 API error: {response.status_code} - {response.text}")
+                        return None
                     
         except Exception as e:
             print(f"V0 API exception: {e}")
@@ -91,7 +167,8 @@ class V0Generator:
         self,
         prompt: str,
         project_name: str,
-        pages: List[str]
+        pages: List[str],
+        stream_callback: Optional[Callable] = None
     ) -> Dict[str, str]:
         """
         Generate a complete Next.js app with multiple pages
@@ -120,6 +197,7 @@ class V0Generator:
         main_page = await self.generate_ui_component(
             prompt=main_page_prompt,
             component_name="page",
+            stream_callback=stream_callback
         )
         
         if main_page:
@@ -137,6 +215,7 @@ class V0Generator:
                 page_component = await self.generate_ui_component(
                     prompt=page_prompt,
                     component_name=page_name.lower(),
+                    stream_callback=stream_callback
                 )
                 
                 if page_component:

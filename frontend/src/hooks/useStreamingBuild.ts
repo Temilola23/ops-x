@@ -12,6 +12,7 @@ interface BuildStatus {
   repo_url?: string;
   app_url?: string;
   error?: string;
+  accumulated?: string;  // For V0 streaming content
 }
 
 export function useStreamingBuild() {
@@ -71,6 +72,13 @@ export function useStreamingBuild() {
                 case "status":
                   setStatus(data.message || "");
                   if (data.progress) setProgress(data.progress);
+                  break;
+
+                case "v0_progress":
+                  // Show V0's real-time progress
+                  setStatus(data.message || "");
+                  if (data.progress) setProgress(data.progress);
+                  // Could also show accumulated content if desired
                   break;
 
                 case "file_created":
