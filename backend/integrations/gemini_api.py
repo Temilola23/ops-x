@@ -26,63 +26,120 @@ class GeminiCodeGenerator:
         Returns: Dict of filename -> content
         """
         
-        system_prompt = f"""You are an expert full-stack developer. Generate a complete, production-ready Next.js 14 application based on the user's prompt.
+        system_prompt = f"""You are an expert full-stack developer. Generate a COMPLETE, FUNCTIONAL Next.js 14 application.
 
 Project Name: {project_name}
 
-Requirements:
-1. Use Next.js 14 with App Router
-2. Use TypeScript
-3. Use Tailwind CSS for styling
-4. Include proper file structure
-5. Make it fully functional with mock data if needed
-6. Include proper error handling
+CRITICAL REQUIREMENTS:
+1. Build ACTUAL WORKING FEATURES - not just static placeholder text
+2. Create interactive UI with state management (useState, React hooks)
+3. Add actual functionality - forms, buttons that work, data that changes
+4. Use Next.js 14 App Router with TypeScript
+5. Beautiful styling with Tailwind CSS
+6. Create separate components in /components folder
+7. Add API routes in /app/api if needed for backend
+8. Make it production-ready and impressive
 
-Return ONLY a JSON object with this exact structure:
-{{
-  "files": {{
-    "app/page.tsx": "...content...",
-    "app/layout.tsx": "...content...",
-    "app/api/route.ts": "...content...",
-    "package.json": "...content...",
-    "tailwind.config.js": "...content...",
-    "next.config.js": "...content...",
-    "tsconfig.json": "...content...",
-    ".env.example": "...content...",
-    "README.md": "...content..."
-  }}
-}}
+RESPONSE FORMAT:
+Return each file in this EXACT format:
 
-Generate ALL necessary files for a working Next.js app."""
+---FILE: app/page.tsx---
+[content here]
+---END FILE---
 
-        full_prompt = f"{system_prompt}\n\nUser Request:\n{prompt}"
+---FILE: app/layout.tsx---
+[content here]
+---END FILE---
+
+---FILE: components/Feature.tsx---
+[content here]
+---END FILE---
+
+And so on for ALL files needed.
+
+REQUIRED FILES:
+- app/page.tsx (main interactive page)
+- app/layout.tsx
+- components/[FeatureComponents].tsx (actual working components)
+- app/api/[endpoint]/route.ts (if backend needed)
+- package.json
+- tailwind.config.ts
+- tsconfig.json
+- README.md"""
+
+        full_prompt = f"""{system_prompt}
+
+USER REQUEST:
+{prompt}
+
+Generate a FULLY FUNCTIONAL app that actually WORKS with real features!"""
         
         try:
-            response = self.model.generate_content(full_prompt)
+            generation_config = {
+                "temperature": 0.7,
+                "max_output_tokens": 8000,
+            }
             
-            # Parse the response - Gemini should return JSON
+            response = self.model.generate_content(
+                full_prompt,
+                generation_config=generation_config
+            )
+            
+            # Parse the response using FILE markers
             response_text = response.text.strip()
             
-            # Clean up markdown code blocks if present
-            if response_text.startswith("```json"):
-                response_text = response_text[7:]
-            if response_text.startswith("```"):
-                response_text = response_text[3:]
-            if response_text.endswith("```"):
-                response_text = response_text[:-3]
+            import re
             
-            response_text = response_text.strip()
+            # Extract files using ---FILE: filename--- markers
+            files = {}
+            pattern = r'---FILE:\s*([^\n]+?)---\n(.*?)\n---END FILE---'
+            matches = re.findall(pattern, response_text, re.DOTALL)
             
-            # Parse JSON
-            import json
-            files_data = json.loads(response_text)
-            
-            return files_data.get("files", {})
+            if matches:
+                print(f"Found {len(matches)} files from Gemini")
+                for filename, content in matches:
+                    filename = filename.strip()
+                    content = content.strip()
+                    files[filename] = content
+                    print(f"  - {filename}")
+                return files
+            else:
+                print("No files found with FILE markers, trying fallback parsing")
+                # Try alternative parsing methods
+                return self._extract_files_from_text(response.text)
             
         except Exception as e:
             print(f"Gemini generation error: {str(e)}")
             # Fallback to minimal Next.js template
             return self._get_minimal_template(project_name, prompt)
+    
+    def _extract_files_from_text(self, text: str) -> Dict[str, str]:
+        """
+        Extract file contents from Gemini response even if JSON parsing fails
+        Looks for file markers and extracts content
+        """
+        import re
+        
+        files = {}
+        
+        # Try to find file blocks in various formats
+        # Format 1: "filename": "content"
+        pattern1 = r'"([^"]+\.(?:tsx|ts|js|jsx|json|css|md))"\s*:\s*"([^"]*(?:\\.[^"]*)*)"'
+        matches = re.findall(pattern1, text, re.DOTALL)
+        
+        for filename, content in matches:
+            # Unescape the content
+            content = content.replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
+            files[filename] = content
+        
+        # Format 2: File: filename\n```content```
+        pattern2 = r'File:\s*([^\n]+)\n```(?:typescript|javascript|tsx|jsx|css|json)?\n(.*?)\n```'
+        matches2 = re.findall(pattern2, text, re.DOTALL)
+        
+        for filename, content in matches2:
+            files[filename.strip()] = content.strip()
+        
+        return files if files else {}
     
     def _get_minimal_template(self, project_name: str, description: str) -> Dict[str, str]:
         """Fallback minimal Next.js template"""

@@ -10,6 +10,7 @@ DEFAULT_ENV = {
     "POSTMAN_API_KEY": "your_postman_api_key_here",
     "DEEPGRAM_API_KEY": "your_deepgram_api_key_here",
     "GEMINI_API_KEY": "your_gemini_api_key_here",
+    "V0_API_KEY": "your_v0_api_key_here",
     "VERCEL_TOKEN": "your_vercel_token_here",
     "JANITOR_API_ENDPOINT": "https://janitorai.com/hackathon/completions",
     "JANITOR_API_KEY": "calhacks2047",
@@ -44,7 +45,7 @@ def save_env(filepath, env_vars):
         # Write in sections
         f.write("# API Keys\n")
         for key in ["CREAO_INVITATION_CODE", "GITHUB_TOKEN", "POSTMAN_API_KEY", 
-                    "DEEPGRAM_API_KEY", "GEMINI_API_KEY", "VERCEL_TOKEN"]:
+                    "DEEPGRAM_API_KEY", "GEMINI_API_KEY", "V0_API_KEY", "VERCEL_TOKEN"]:
             if key in env_vars:
                 f.write(f"{key}={env_vars[key]}\n")
         

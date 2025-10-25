@@ -88,7 +88,7 @@ async def main():
     if all(results):
         print("\n🎉 All APIs ready! You can start building!")
     else:
-        print("\n⚠️  Some APIs need attention. Check the errors above.")
+        print("\n Some APIs need attention. Check the errors above.")
 
 
 if __name__ == "__main__":

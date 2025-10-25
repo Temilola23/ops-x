@@ -5,7 +5,7 @@ echo "================================"
 
 # Check if we're in a virtual environment
 if [[ "$VIRTUAL_ENV" == "" ]]; then
-    echo "⚠️  WARNING: No virtual environment detected!"
+    echo " WARNING: No virtual environment detected!"
     echo "   It's recommended to use a virtual environment."
     echo ""
     echo "   Create one with: python -m venv venv"
@@ -33,7 +33,7 @@ cd ../frontend
 if command -v npm &> /dev/null; then
     npm install
 else
-    echo "⚠️  npm not found. Please install Node.js to set up frontend."
+    echo " npm not found. Please install Node.js to set up frontend."
 fi
 
 echo ""

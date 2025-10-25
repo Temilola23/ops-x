@@ -80,7 +80,7 @@ async def build_app(request: AppBuildRequest, background_tasks: BackgroundTasks)
     
     try:
         # Step 1: Generate code with Gemini
-        print(f"🤖 Generating code for: {project_name}")
+        print(f"Generating code for: {project_name}")
         
         if not gemini_generator:
             raise HTTPException(
@@ -100,7 +100,7 @@ async def build_app(request: AppBuildRequest, background_tasks: BackgroundTasks)
         build_status[project_id]["progress"] = 30
         
         # Step 2: Create GitHub repository
-        print(f"📁 Creating GitHub repo: {project_name}")
+        print(f"Creating GitHub repo: {project_name}")
         
         repo_name = project_name.lower().replace(' ', '-').replace('_', '-')
         repo_result = await github_client.create_repo(
@@ -123,7 +123,7 @@ async def build_app(request: AppBuildRequest, background_tasks: BackgroundTasks)
         build_status[project_id]["repo_url"] = repo_url
         
         # Step 3: Push files to GitHub
-        print(f"⬆️  Pushing code to GitHub: {repo_full_name}")
+        print(f"Pushing code to GitHub: {repo_full_name}")
         
         # Give GitHub a moment to initialize the repo
         await asyncio.sleep(2)
@@ -136,7 +136,7 @@ async def build_app(request: AppBuildRequest, background_tasks: BackgroundTasks)
         )
         
         if not push_result["success"]:
-            print(f"⚠️  Warning: Some files failed to push: {push_result}")
+            print(f" Warning: Some files failed to push: {push_result}")
         
         build_status[project_id]["status"] = "deploying"
         build_status[project_id]["progress"] = 70
@@ -147,7 +147,7 @@ async def build_app(request: AppBuildRequest, background_tasks: BackgroundTasks)
         # Check if Vercel is configured
         if not vercel_client.token:
             # If no Vercel token, just return the GitHub repo
-            print("⚠️  Vercel not configured, returning GitHub URL")
+            print(" Vercel not configured, returning GitHub URL")
             
             return AppBuildResponse(
                 app_url=repo_url,
@@ -170,7 +170,7 @@ async def build_app(request: AppBuildRequest, background_tasks: BackgroundTasks)
         )
         
         if not project_result["success"]:
-            print(f"⚠️  Vercel project creation failed: {project_result.get('error')}")
+            print(f" Vercel project creation failed: {project_result.get('error')}")
             # Return GitHub URL as fallback
             return AppBuildResponse(
                 app_url=repo_url,

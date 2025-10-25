@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 # Import MCP endpoints
 from mcp import (
     app_build,
+    app_build_hybrid,
     repo_patch,
     conflict_scan,
     chat_summarize,
@@ -38,7 +39,7 @@ if env_path.exists():
     print(f" Loaded environment from {env_path}")
 else:
     load_dotenv()  # Try current directory
-    print("⚠️  Loading .env from current directory")
+    print(" Loading .env from current directory")
 
 
 @asynccontextmanager
@@ -74,6 +75,7 @@ app.include_router(projects.router, prefix="/api", tags=["Projects API"])
 
 # Register MCP endpoints
 app.include_router(app_build.router, prefix="/mcp", tags=["MCP - App Build"])
+app.include_router(app_build_hybrid.router, prefix="/mcp", tags=["MCP - Hybrid Build (V0 + Gemini)"])
 app.include_router(repo_patch.router, prefix="/mcp", tags=["MCP - Repository"])
 app.include_router(conflict_scan.router, prefix="/mcp", tags=["MCP - Conflict"])
 app.include_router(chat_summarize.router, prefix="/mcp", tags=["MCP - Chat"])
