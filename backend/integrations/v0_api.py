@@ -63,6 +63,15 @@ class V0Generator:
                     if choices and len(choices) > 0:
                         content = choices[0].get("message", {}).get("content", "")
                         if content:
+                            # Remove thinking tags if present
+                            import re
+                            # Remove <Thinking>...</Thinking> blocks
+                            content = re.sub(r'<Thinking>.*?</Thinking>', '', content, flags=re.DOTALL)
+                            # Extract code from markdown blocks if present
+                            code_match = re.search(r'```(?:tsx|typescript|jsx|javascript)?\n(.*?)```', content, re.DOTALL)
+                            if code_match:
+                                content = code_match.group(1).strip()
+                            
                             return {
                                 "filename": f"components/{component_name}.tsx",
                                 "content": content,

@@ -131,3 +131,25 @@ async def delete_project(project_id: str):
         "error": None
     }
 
+
+@router.get("/projects/{project_id}/branches")
+async def get_project_branches(project_id: str):
+    """Get branches for a project"""
+    # For MVP, return empty branches
+    return {
+        "success": True,
+        "data": [],
+        "error": None
+    }
+
+
+@router.get("/projects/{project_id}/agents")
+async def get_project_agents(project_id: str):
+    """Get agents for a project"""
+    # For MVP, return empty agents
+    return {
+        "success": True,
+        "data": [],
+        "error": None
+    }
+
