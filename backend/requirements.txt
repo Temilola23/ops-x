@@ -37,7 +37,7 @@ pydantic-settings==2.3.4  # For settings management (updated for pydantic 2.8)
 # Security and Auth
 python-jose[cryptography]==3.3.0  # JWT tokens
 passlib[bcrypt]==1.7.4  # Password hashing
-resend==2.17.0  # Email service for OTP
+sendgrid==6.12.5  # Email service for OTP (replaced Resend)
 email-validator==2.3.0  # Email validation for Pydantic
 
 # Documentation and API tools

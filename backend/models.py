@@ -18,9 +18,10 @@ class User(Base):
     # For anonymous users (MVP flow)
     session_id = Column(String(255), unique=True, index=True, nullable=True)
     
-    # For authenticated users (after sign up)
+    # For authenticated users (after sign up with Clerk)
+    clerk_user_id = Column(String(255), unique=True, index=True, nullable=True)
     email = Column(String(255), unique=True, index=True, nullable=True)
-    hashed_password = Column(String(255), nullable=True)
+    hashed_password = Column(String(255), nullable=True)  # Legacy, not used with Clerk
     name = Column(String(255), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -74,14 +75,17 @@ class Stakeholder(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Linked after signup
     name = Column(String(255), nullable=False)
     email = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False)  # Founder, Frontend, Backend, Investor, Facilitator
+    status = Column(String(20), default="pending")  # pending, active, inactive
     github_branch = Column(String(255))  # Linked branch name
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     project = relationship("Project", back_populates="stakeholders")
+    user = relationship("User")
     branches = relationship("Branch", back_populates="stakeholder")
 
 
