@@ -199,6 +199,22 @@ class ApiClient {
     });
     return data;
   }
+
+  // GitHub Integration
+  async saveToGitHub(payload: {
+    project_id: string;
+    project_name: string;
+    files: Array<{ name: string; content: string }>;
+    v0_chat_id?: string;
+    v0_preview_url?: string;
+    description?: string;
+  }): Promise<ApiResponse> {
+    const { data } = await this.client.post(
+      "/api/projects/save-to-github",
+      payload
+    );
+    return data;
+  }
 }
 
 export const apiClient = new ApiClient();

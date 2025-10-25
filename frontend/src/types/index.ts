@@ -198,3 +198,21 @@ export interface ApiResponse<T = any> {
   error?: string;
   message?: string;
 }
+
+// v0 Integration Types
+export interface V0File {
+  name: string;
+  content: string;
+}
+
+export interface V0Chat {
+  chatId?: string;
+  previewUrl?: string;
+  files?: V0File[];
+}
+
+export interface V0BuildResult {
+  success: boolean;
+  data?: V0Chat;
+  error?: string;
+}
