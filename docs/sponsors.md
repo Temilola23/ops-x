@@ -161,7 +161,7 @@ FETCHAI_CODE_CALHACK2025AV=<for-Agentverse-Premium>
 - 13:00 PDT - Fetch.ai Networking
 - 15:00 PDT - Creao Networking & 'Yoga'
 
-## 🚀 Quick Start Commands
+##  Quick Start Commands
 
 ```bash
 # Register with Creao

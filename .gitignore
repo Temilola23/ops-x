@@ -24,6 +24,8 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+scripts/.env
+# scripts/create_env.py
 
 # IDE
 .vscode/

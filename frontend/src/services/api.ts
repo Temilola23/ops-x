@@ -1,8 +1,8 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
 import type {
   ApiResponse,
-  CreaoRequest,
-  CreaoResponse,
+  AppBuildRequest,
+  AppBuildResponse,
   RepoPatchRequest,
   RepoPatchResponse,
   ConflictScanRequest,
@@ -55,10 +55,11 @@ class ApiClient {
   }
 
   // MCP Endpoints
-  async buildWithCreao(
-    request: CreaoRequest
-  ): Promise<ApiResponse<CreaoResponse>> {
-    const { data } = await this.client.post("/mcp/creao/build", request);
+  async buildApp(
+    request: AppBuildRequest
+  ): Promise<ApiResponse<AppBuildResponse>> {
+    // Use hybrid endpoint for V0 + Gemini
+    const { data } = await this.client.post("/mcp/app/build/hybrid", request);
     return data;
   }
 

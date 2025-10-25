@@ -85,7 +85,7 @@ export interface Conflict {
 }
 
 // MCP Request/Response types
-export interface CreaoRequest {
+export interface AppBuildRequest {
   project_id: string;
   spec: {
     name: string;
@@ -95,8 +95,9 @@ export interface CreaoRequest {
   };
 }
 
-export interface CreaoResponse {
+export interface AppBuildResponse {
   app_url: string;
+  repo_url?: string;
   components: Array<{ id: string; type: string }>;
   api_schema: Array<{
     path: string;
@@ -104,6 +105,7 @@ export interface CreaoResponse {
     input: string;
     output: string;
   }>;
+  status: string;
 }
 
 export interface RepoPatchRequest {

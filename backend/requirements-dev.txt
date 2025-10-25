@@ -2,6 +2,7 @@
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
+pytest-mock==3.12.0  # For mocking in tests
 black==23.11.0
 flake8==6.1.0
 mypy==1.7.1
@@ -11,3 +12,9 @@ pre-commit==3.5.0
 httpx[http2]==0.25.2  # For testing async endpoints
 faker==20.1.0
 factory-boy==3.3.0
+pytest-env==1.1.1  # For environment variables in tests
+
+# Development tools
+ipython==8.18.1  # Better Python shell
+rich==13.7.0  # Better terminal output
+watchdog==3.0.0  # File watching for auto-reload

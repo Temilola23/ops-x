@@ -124,7 +124,7 @@ frontend/src/
 
 ---
 
-## 🚀 Quick Start Commands
+##  Quick Start Commands
 
 ### Person A (Backend):
 ```bash

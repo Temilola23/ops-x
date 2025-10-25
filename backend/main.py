@@ -11,7 +11,8 @@ from dotenv import load_dotenv
 
 # Import MCP endpoints
 from mcp import (
-    creao_build,
+    app_build,
+    app_build_hybrid,
     repo_patch,
     conflict_scan,
     chat_summarize,
@@ -20,18 +21,35 @@ from mcp import (
     postman_flow
 )
 
+# Import REST API endpoints
+from api import projects
+
 # Load environment variables
-load_dotenv()
+# Look for .env in scripts/ directory first, then current directory
+import sys
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Load .env from scripts/ directory
+env_path = Path(__file__).parent.parent / "scripts" / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f" Loaded environment from {env_path}")
+else:
+    load_dotenv()  # Try current directory
+    print(" Loading .env from current directory")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize resources on startup"""
-    print("🚀 Starting OPS-X Backend Server...")
+    print(" Starting OPS-X Backend Server...")
     # Initialize any resources here (DB connections, etc.)
     yield
     # Cleanup on shutdown
-    print("👋 Shutting down OPS-X Backend Server...")
+    print(" Shutting down OPS-X Backend Server...")
 
 
 # Create FastAPI app
@@ -52,8 +70,12 @@ app.add_middleware(
 )
 
 
+# Register REST API endpoints
+app.include_router(projects.router, prefix="/api", tags=["Projects API"])
+
 # Register MCP endpoints
-app.include_router(creao_build.router, prefix="/mcp", tags=["MCP - Creao"])
+app.include_router(app_build.router, prefix="/mcp", tags=["MCP - App Build"])
+app.include_router(app_build_hybrid.router, prefix="/mcp", tags=["MCP - Hybrid Build (V0 + Gemini)"])
 app.include_router(repo_patch.router, prefix="/mcp", tags=["MCP - Repository"])
 app.include_router(conflict_scan.router, prefix="/mcp", tags=["MCP - Conflict"])
 app.include_router(chat_summarize.router, prefix="/mcp", tags=["MCP - Chat"])

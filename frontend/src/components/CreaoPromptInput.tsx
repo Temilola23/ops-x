@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Sparkles } from "lucide-react";
 import { apiClient } from "@/services/api";
 import { toast } from "sonner";
-import type { CreaoRequest } from "@/types";
+import type { AppBuildRequest } from "@/types";
 
 interface CreaoPromptInputProps {
   onProjectCreated?: (projectId: string, appUrl: string) => void;
@@ -47,10 +47,10 @@ export function CreaoPromptInput({ onProjectCreated }: CreaoPromptInputProps) {
 
       const projectId = projectResponse.data.id;
 
-      toast.success("Project created! Building with Creao...");
+      toast.success("Project created! Building app...");
 
-      // Build with Creao
-      const buildRequest: CreaoRequest = {
+      // Build app
+      const buildRequest: AppBuildRequest = {
         project_id: projectId,
         spec: {
           name: projectName,
@@ -60,7 +60,7 @@ export function CreaoPromptInput({ onProjectCreated }: CreaoPromptInputProps) {
         },
       };
 
-      const buildResponse = await apiClient.buildWithCreao(buildRequest);
+      const buildResponse = await apiClient.buildApp(buildRequest);
 
       if (buildResponse.success && buildResponse.data) {
         toast.success("Build complete!");
@@ -129,7 +129,7 @@ export function CreaoPromptInput({ onProjectCreated }: CreaoPromptInputProps) {
           {isBuilding ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Building with Creao...
+              Building MVP...
             </>
           ) : (
             <>
