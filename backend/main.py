@@ -23,7 +23,7 @@ from mcp import (
 )
 
 # Import REST API endpoints
-from api import projects
+from api import projects, stakeholders, branches
 
 # Load environment variables
 # Look for .env in scripts/ directory first, then current directory
@@ -73,6 +73,8 @@ app.add_middleware(
 
 # Register REST API endpoints
 app.include_router(projects.router, prefix="/api", tags=["Projects API"])
+app.include_router(stakeholders.router, prefix="/api", tags=["Stakeholders API"])
+app.include_router(branches.router, prefix="/api", tags=["Branches API"])
 
 # Register MCP endpoints
 app.include_router(app_build_v0.router, tags=["MCP - PURE V0 BUILD (RECOMMENDED)"])  # ⭐ USE THIS ONE

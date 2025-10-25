@@ -19,6 +19,7 @@ router = APIRouter()
 
 # In-memory storage (for MVP - replace with DB later)
 projects_db: Dict[str, dict] = {}
+codebase_storage: Dict[str, Dict[str, str]] = {}  # project_id -> {filename: content}
 
 
 class CreateProjectRequest(BaseModel):
@@ -224,8 +225,8 @@ async def save_to_github(request: SaveToGitHubRequest):
         repo_full_name = repo_result["repo_name"]
         default_branch = repo_result.get("default_branch", "main")
         
-        print(f"✅ Repo created: {repo_url}")
-        print(f"⬆️  Pushing {len(request.files)} files to GitHub...")
+        print(f"Repo created: {repo_url}")
+        print(f"Pushing {len(request.files)} files to GitHub...")
         
         # 2. Convert v0 files to dict
         files_dict = {file.name: file.content for file in request.files}
@@ -279,7 +280,7 @@ This project was created using the One-Prompt Startup Platform.
                 }
             }
         
-        print(f"✅ Pushed {len(files_dict)} files successfully")
+        print(f"Pushed {len(files_dict)} files successfully")
         
         # 5. Update project in database
         project["repo_url"] = repo_url
@@ -307,7 +308,7 @@ This project was created using the One-Prompt Startup Platform.
         }
         
     except Exception as e:
-        print(f"❌ Error saving to GitHub: {str(e)}")
+        print(f"Error saving to GitHub: {str(e)}")
         import traceback
         traceback.print_exc()
         
@@ -316,4 +317,87 @@ This project was created using the One-Prompt Startup Platform.
             "error": f"Failed to save to GitHub: {str(e)}",
             "data": None
         }
+
+
+@router.post("/projects/{project_id}/codebase")
+async def store_codebase(project_id: str, files: Dict[str, str]):
+    """Store generated codebase files for a project"""
+    if project_id not in projects_db:
+        return {
+            "success": False,
+            "data": None,
+            "error": "Project not found"
+        }
+    
+    codebase_storage[project_id] = files
+    
+    return {
+        "success": True,
+        "data": {
+            "project_id": project_id,
+            "file_count": len(files),
+            "files": list(files.keys())
+        },
+        "error": None
+    }
+
+
+@router.get("/projects/{project_id}/codebase")
+async def get_codebase(project_id: str):
+    """Get stored codebase files for a project"""
+    if project_id not in projects_db:
+        return {
+            "success": False,
+            "data": None,
+            "error": "Project not found"
+        }
+    
+    if project_id not in codebase_storage:
+        return {
+            "success": True,
+            "data": {"files": {}},
+            "error": None
+        }
+    
+    return {
+        "success": True,
+        "data": {"files": codebase_storage[project_id]},
+        "error": None
+    }
+
+
+@router.get("/projects/{project_id}/codebase/files")
+async def list_codebase_files(project_id: str):
+    """List file structure of stored codebase"""
+    if project_id not in projects_db:
+        return {
+            "success": False,
+            "data": None,
+            "error": "Project not found"
+        }
+    
+    if project_id not in codebase_storage:
+        return {
+            "success": True,
+            "data": [],
+            "error": None
+        }
+    
+    files = codebase_storage[project_id]
+    
+    # Return file tree structure
+    file_list = [
+        {
+            "path": filename,
+            "size": len(content),
+            "type": "file"
+        }
+        for filename, content in files.items()
+    ]
+    
+    return {
+        "success": True,
+        "data": file_list,
+        "error": None
+    }
 

@@ -30,6 +30,7 @@ class V0BuildRequest(BaseModel):
     spec: Optional[AppSpec] = None
     github_repo: Optional[str] = None
     deploy_vercel: bool = True
+    project_id: Optional[str] = None  # Link to existing project
 
 class V0BuildResponse(BaseModel):
     success: bool
@@ -331,14 +332,24 @@ async def build_app_with_v0_streaming(request: V0BuildRequest):
                         "progress": 95
                     })
             
+            # Store codebase in backend (if project_id provided)
+            stored_project_id = request.project_id or project_id
+            try:
+                from api.projects import codebase_storage
+                codebase_storage[stored_project_id] = all_files
+                print(f"Stored {len(all_files)} files for project {stored_project_id}")
+            except Exception as storage_error:
+                print(f"Warning: Could not store codebase: {storage_error}")
+            
             # Complete
             yield create_sse_event({
                 "type": "complete",
                 "phase": "done",
                 "message": "Build complete!",
                 "progress": 100,
-                "project_id": project_id,
-                "files_count": len(all_files)
+                "project_id": stored_project_id,
+                "files_count": len(all_files),
+                "github_url": github_url
             })
         
         except Exception as e:

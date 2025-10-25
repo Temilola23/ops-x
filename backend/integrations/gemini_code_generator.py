@@ -242,6 +242,28 @@ Remember: Real demo in 60 seconds. Make it work."""
                 files[filename] = match.group(1).strip()
         
         return files
+    
+    def generate_text(self, prompt: str) -> str:
+        """
+        Generate simple text response (for suggestions, etc.)
+        
+        Args:
+            prompt: The prompt to send to Gemini
+            
+        Returns:
+            Generated text response
+        """
+        try:
+            response = self.model.generate_content(prompt)
+            
+            if not response or not response.text:
+                raise ValueError("Gemini returned empty response")
+            
+            return response.text
+            
+        except Exception as e:
+            print(f"ERROR generating text with Gemini: {e}")
+            raise
 
 
 # Singleton instance - will be initialized when API key is available
