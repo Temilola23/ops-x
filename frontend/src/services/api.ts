@@ -58,8 +58,8 @@ class ApiClient {
   async buildApp(
     request: AppBuildRequest
   ): Promise<ApiResponse<AppBuildResponse>> {
-    // Use hybrid endpoint for V0 + Gemini
-    const { data } = await this.client.post("/mcp/app/build/hybrid", request);
+    // Use PURE V0 endpoint - NO GEMINI
+    const { data } = await this.client.post("/mcp/app/build/v0", request);
     return data;
   }
 
