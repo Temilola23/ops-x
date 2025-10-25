@@ -35,10 +35,10 @@ tenacity==8.2.3# For retry logic
 pydantic-settings==2.3.4# For settings management (updated for pydantic 2.8)
 
 # Security and Auth
-python-jose[cryptography]==3.3.0# JWT tokens
-passlib[bcrypt]==1.7.4# Password hashing
-resend==2.17.0# Email service for OTP
-email-validator==2.3.0# Email validation for Pydantic
+python-jose[cryptography]==3.3.0  # JWT tokens
+passlib[bcrypt]==1.7.4  # Password hashing
+sendgrid==6.12.5  # Email service for OTP (replaced Resend)
+email-validator==2.3.0  # Email validation for Pydantic
 
 # Documentation and API tools
 requests==2.31.0# Some APIs might need this
