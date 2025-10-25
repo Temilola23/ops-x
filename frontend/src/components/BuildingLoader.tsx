@@ -28,7 +28,7 @@ export function BuildingLoader() {
   const CurrentIcon = buildingSteps[currentStep].icon;
 
   return (
-    <div className="absolute inset-0 bg-background/95 backdrop-blur-md flex items-center justify-center z-50">
+    <div className="absolute inset-0 bg-background/95 backdrop-blur-md flex items-center justify-center z-50 w-full h-full">
       {/* Animated Background Gradient */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]">
