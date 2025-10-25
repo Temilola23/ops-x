@@ -7,6 +7,7 @@ python-dotenv==1.0.0
 # Database and vector store
 chromadb==0.4.18
 sqlalchemy==2.0.23
+redis==5.0.1  # For caching and session management
 
 # AI/ML
 openai==1.3.5
@@ -16,13 +17,27 @@ langchain==0.0.340
 # External APIs
 httpx==0.25.2
 PyGithub==2.1.1
-postman-sdk==0.0.1  # placeholder - might need custom implementation
+deepgram-sdk==3.0.0  # For TTS generation
 
 # Agent frameworks
 uagents==0.11.0  # Fetch.ai uAgents
+cosmpy==0.9.0  # Fetch.ai blockchain interaction
 
 # Utilities
 python-multipart==0.0.6
 aiofiles==23.2.1
 websockets==12.0
 pyyaml==6.0.1
+tenacity==8.2.3  # For retry logic
+pydantic-settings==2.1.0  # For settings management
+
+# Security and Auth
+python-jose[cryptography]==3.3.0  # JWT tokens
+passlib[bcrypt]==1.7.4  # Password hashing
+
+# Documentation and API tools
+requests==2.31.0  # Some APIs might need this
+aiohttp==3.9.1  # Alternative async HTTP client
+
+# MCP (Model Context Protocol) - if available
+# mcp-python==0.1.0  # Placeholder - check if exists

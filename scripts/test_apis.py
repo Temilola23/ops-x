@@ -44,7 +44,9 @@ async def test_janitor_ai():
                 return False
                 
         except Exception as e:
-            print(f"❌ Janitor AI connection failed: {str(e)}")
+            print(f"❌ Janitor AI connection failed: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return False
 
 
