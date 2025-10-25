@@ -47,8 +47,30 @@ else:
 async def lifespan(app: FastAPI):
     """Initialize resources on startup"""
     print(" Starting OPS-X Backend Server...")
-    # Initialize any resources here (DB connections, etc.)
+    
+    # Initialize database
+    try:
+        from database import init_db, engine
+        from integrations.chroma_client import chroma_search
+        
+        print("Initializing PostgreSQL database...")
+        init_db()
+        
+        # Test connection
+        with engine.connect() as conn:
+            print("PostgreSQL connection successful!")
+        
+        if chroma_search:
+            print(f"Chroma DB initialized: {chroma_search.get_stats()}")
+        else:
+            print("WARNING: Chroma DB not available")
+        
+    except Exception as e:
+        print(f"WARNING: Database initialization failed: {e}")
+        print("Make sure PostgreSQL is running and DATABASE_URL is correct")
+    
     yield
+    
     # Cleanup on shutdown
     print(" Shutting down OPS-X Backend Server...")
 

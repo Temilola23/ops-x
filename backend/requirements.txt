@@ -7,6 +7,8 @@ python-dotenv==1.0.0
 # Database and vector store
 chromadb==0.4.18
 sqlalchemy==2.0.23
+psycopg2-binary==2.9.9  # PostgreSQL adapter
+alembic==1.13.1  # Database migrations
 redis==5.0.1  # For caching and session management
 
 # AI/ML

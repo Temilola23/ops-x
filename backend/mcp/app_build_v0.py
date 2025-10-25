@@ -16,6 +16,7 @@ from datetime import datetime
 from integrations.v0_clean import v0_clean_generator
 from integrations.github_api import github_client
 from integrations.vercel_api import vercel_client
+from integrations.chroma_client import chroma_search, generate_embedding
 
 router = APIRouter()
 
@@ -332,14 +333,50 @@ async def build_app_with_v0_streaming(request: V0BuildRequest):
                         "progress": 95
                     })
             
-            # Store codebase in backend (if project_id provided)
+            # Store codebase in Chroma for semantic search
             stored_project_id = request.project_id or project_id
-            try:
-                from api.projects import codebase_storage
-                codebase_storage[stored_project_id] = all_files
-                print(f"Stored {len(all_files)} files for project {stored_project_id}")
-            except Exception as storage_error:
-                print(f"Warning: Could not store codebase: {storage_error}")
+            if chroma_search:
+                yield create_sse_event({
+                    "type": "status",
+                    "phase": "chroma_storing",
+                    "message": "Storing code embeddings in Chroma...",
+                    "progress": 96
+                })
+                
+                try:
+                    stored_count = 0
+                    for file_path, content in all_files.items():
+                        # Generate embedding
+                        embedding = generate_embedding(content)
+                        
+                        # Store in Chroma
+                        chroma_search.add_code_file(
+                            project_id=str(stored_project_id),
+                            file_path=file_path,
+                            content=content,
+                            embedding=embedding
+                        )
+                        stored_count += 1
+                    
+                    print(f"Stored {stored_count} files in Chroma for project {stored_project_id}")
+                    
+                    yield create_sse_event({
+                        "type": "status",
+                        "phase": "chroma_stored",
+                        "message": f"Stored {stored_count} files in Chroma for semantic search!",
+                        "progress": 98
+                    })
+                    
+                except Exception as storage_error:
+                    print(f"Warning: Could not store in Chroma: {storage_error}")
+                    yield create_sse_event({
+                        "type": "status",
+                        "phase": "chroma_warning",
+                        "message": "Warning: Chroma storage failed",
+                        "progress": 98
+                    })
+            else:
+                print(f"Chroma not available, skipping embedding storage")
             
             # Complete
             yield create_sse_event({

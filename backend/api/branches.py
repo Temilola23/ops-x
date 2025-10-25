@@ -1,27 +1,22 @@
 """
 Branches API - GitHub branch management with AI suggestions
+Now using PostgreSQL with SQLAlchemy
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Dict, List, Optional
+from sqlalchemy.orm import Session
+from typing import Optional
 from datetime import datetime
-import uuid
-import os
+import json
+import re
 
-# Import integrations
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
+from database import get_db
+from models import Branch, Project, Stakeholder
 from integrations.github_api import github_client
 from integrations.gemini_code_generator import GeminiCodeGenerator
 
 router = APIRouter()
-
-# In-memory storage
-branches_db: Dict[str, dict] = {}  # branch_id -> branch
-project_branches: Dict[str, List[str]] = {}  # project_id -> [branch_ids]
 
 # Initialize Gemini for branch name suggestions
 gemini_suggester = None
@@ -39,29 +34,30 @@ class SuggestBranchRequest(BaseModel):
 
 
 class CreateBranchRequest(BaseModel):
-    stakeholder_id: str
+    stakeholder_id: int
     stakeholder_name: str
     branch_name: str
     github_repo: str  # e.g., "username/repo-name"
 
 
-class Branch(BaseModel):
-    id: str
-    project_id: str
-    stakeholder_id: str
-    stakeholder_name: str
-    branch_name: str
-    github_repo: str
-    github_branch_url: Optional[str] = None
-    status: str  # active, merged, closed
-    created_at: str
-
-
 @router.post("/projects/{project_id}/branches/suggest")
-async def suggest_branch_name(project_id: str, request: SuggestBranchRequest):
+async def suggest_branch_name(
+    project_id: int,
+    request: SuggestBranchRequest,
+    db: Session = Depends(get_db)
+):
     """
     AI-powered branch name suggestion based on stakeholder role
     """
+    
+    # Verify project exists
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        return {
+            "success": False,
+            "data": None,
+            "error": "Project not found"
+        }
     
     if not gemini_suggester:
         # Fallback to simple naming if Gemini not available
@@ -101,11 +97,7 @@ Return ONLY a JSON object like this (no markdown, no explanations):
     try:
         response = gemini_suggester.generate_text(prompt)
         
-        # Try to parse JSON from response
-        import json
-        import re
-        
-        # Extract JSON from response (might have markdown or extra text)
+        # Extract JSON from response
         json_match = re.search(r'\{.*\}', response, re.DOTALL)
         if json_match:
             suggestions = json.loads(json_match.group())
@@ -142,10 +134,35 @@ Return ONLY a JSON object like this (no markdown, no explanations):
 
 
 @router.post("/projects/{project_id}/branches")
-async def create_branch(project_id: str, request: CreateBranchRequest):
+async def create_branch(
+    project_id: int,
+    request: CreateBranchRequest,
+    db: Session = Depends(get_db)
+):
     """
     Create a GitHub branch for a stakeholder
     """
+    
+    # Verify project exists
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        return {
+            "success": False,
+            "data": None,
+            "error": "Project not found"
+        }
+    
+    # Verify stakeholder exists
+    stakeholder = db.query(Stakeholder).filter(
+        Stakeholder.id == request.stakeholder_id,
+        Stakeholder.project_id == project_id
+    ).first()
+    if not stakeholder:
+        return {
+            "success": False,
+            "data": None,
+            "error": "Stakeholder not found"
+        }
     
     if not github_client or not github_client.token:
         return {
@@ -154,8 +171,7 @@ async def create_branch(project_id: str, request: CreateBranchRequest):
             "error": "GitHub integration not configured"
         }
     
-    branch_id = str(uuid.uuid4())
-    now = datetime.utcnow().isoformat()
+    github_branch_url = None
     
     # Create branch on GitHub
     try:
@@ -191,9 +207,7 @@ async def create_branch(project_id: str, request: CreateBranchRequest):
                     "error": error_msg
                 }
             
-            branch_data = response.json()
             github_branch_url = f"https://github.com/{request.github_repo}/tree/{request.branch_name}"
-            
             print(f"Created GitHub branch: {github_branch_url}")
     
     except Exception as e:
@@ -203,115 +217,133 @@ async def create_branch(project_id: str, request: CreateBranchRequest):
             "error": f"Failed to create GitHub branch: {str(e)}"
         }
     
-    # Store branch in our DB
-    branch = {
-        "id": branch_id,
-        "project_id": project_id,
-        "stakeholder_id": request.stakeholder_id,
-        "stakeholder_name": request.stakeholder_name,
-        "branch_name": request.branch_name,
-        "github_repo": request.github_repo,
-        "github_branch_url": github_branch_url,
-        "status": "active",
-        "created_at": now,
-    }
+    # Store branch in database
+    branch = Branch(
+        project_id=project_id,
+        stakeholder_id=request.stakeholder_id,
+        branch_name=request.branch_name,
+        github_url=github_branch_url,
+        status="active"
+    )
     
-    branches_db[branch_id] = branch
+    db.add(branch)
     
-    # Add to project's branch list
-    if project_id not in project_branches:
-        project_branches[project_id] = []
-    project_branches[project_id].append(branch_id)
+    # Update stakeholder with branch name
+    stakeholder.github_branch = request.branch_name
     
-    # Update stakeholder with branch info (if stakeholders API is loaded)
-    try:
-        from api.stakeholders import stakeholders_db
-        if request.stakeholder_id in stakeholders_db:
-            stakeholders_db[request.stakeholder_id]["branch_name"] = request.branch_name
-    except Exception:
-        pass  # Stakeholders API might not be loaded yet
+    db.commit()
+    db.refresh(branch)
     
     return {
         "success": True,
-        "data": branch,
+        "data": {
+            "id": branch.id,
+            "project_id": branch.project_id,
+            "stakeholder_id": branch.stakeholder_id,
+            "stakeholder_name": request.stakeholder_name,
+            "branch_name": branch.branch_name,
+            "github_url": branch.github_url,
+            "status": branch.status,
+            "created_at": branch.created_at.isoformat()
+        },
         "error": None
     }
 
 
 @router.get("/projects/{project_id}/branches")
-async def list_branches(project_id: str):
+async def list_branches(project_id: int, db: Session = Depends(get_db)):
     """List all branches for a project"""
     
-    if project_id not in project_branches:
+    # Verify project exists
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
         return {
-            "success": True,
-            "data": [],
-            "error": None
+            "success": False,
+            "data": None,
+            "error": "Project not found"
         }
     
-    branch_ids = project_branches[project_id]
-    branches = [branches_db[bid] for bid in branch_ids if bid in branches_db]
+    branches = db.query(Branch).filter(Branch.project_id == project_id).all()
     
     return {
         "success": True,
-        "data": branches,
+        "data": [
+            {
+                "id": b.id,
+                "project_id": b.project_id,
+                "stakeholder_id": b.stakeholder_id,
+                "branch_name": b.branch_name,
+                "github_url": b.github_url,
+                "status": b.status,
+                "created_at": b.created_at.isoformat()
+            }
+            for b in branches
+        ],
         "error": None
     }
 
 
 @router.get("/projects/{project_id}/branches/{branch_id}")
-async def get_branch(project_id: str, branch_id: str):
+async def get_branch(
+    project_id: int,
+    branch_id: int,
+    db: Session = Depends(get_db)
+):
     """Get a specific branch"""
     
-    if branch_id not in branches_db:
+    branch = db.query(Branch).filter(
+        Branch.id == branch_id,
+        Branch.project_id == project_id
+    ).first()
+    
+    if not branch:
         return {
             "success": False,
             "data": None,
             "error": "Branch not found"
         }
     
-    branch = branches_db[branch_id]
-    
-    if branch["project_id"] != project_id:
-        return {
-            "success": False,
-            "data": None,
-            "error": "Branch not found in this project"
-        }
-    
     return {
         "success": True,
-        "data": branch,
+        "data": {
+            "id": branch.id,
+            "project_id": branch.project_id,
+            "stakeholder_id": branch.stakeholder_id,
+            "branch_name": branch.branch_name,
+            "github_url": branch.github_url,
+            "status": branch.status,
+            "created_at": branch.created_at.isoformat()
+        },
         "error": None
     }
 
 
 @router.delete("/projects/{project_id}/branches/{branch_id}")
-async def delete_branch(project_id: str, branch_id: str):
+async def delete_branch(
+    project_id: int,
+    branch_id: int,
+    db: Session = Depends(get_db)
+):
     """Delete a branch (mark as closed, don't delete from GitHub)"""
     
-    if branch_id not in branches_db:
+    branch = db.query(Branch).filter(
+        Branch.id == branch_id,
+        Branch.project_id == project_id
+    ).first()
+    
+    if not branch:
         return {
             "success": False,
             "data": None,
             "error": "Branch not found"
         }
     
-    branch = branches_db[branch_id]
-    
-    if branch["project_id"] != project_id:
-        return {
-            "success": False,
-            "data": None,
-            "error": "Branch not found in this project"
-        }
-    
     # Mark as closed instead of deleting
-    branch["status"] = "closed"
+    branch.status = "closed"
+    db.commit()
     
     return {
         "success": True,
         "data": {"closed": branch_id},
         "error": None
     }
-

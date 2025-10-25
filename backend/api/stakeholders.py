@@ -1,18 +1,18 @@
 """
 Stakeholders API - Team member management for projects
+Now using PostgreSQL with SQLAlchemy
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Dict, List, Optional
+from sqlalchemy.orm import Session
+from typing import Optional
 from datetime import datetime
-import uuid
+
+from database import get_db
+from models import Stakeholder, Project
 
 router = APIRouter()
-
-# In-memory storage (for MVP - replace with DB later)
-stakeholders_db: Dict[str, dict] = {}  # stakeholder_id -> stakeholder
-project_stakeholders: Dict[str, List[str]] = {}  # project_id -> [stakeholder_ids]
 
 
 class CreateStakeholderRequest(BaseModel):
@@ -21,156 +21,200 @@ class CreateStakeholderRequest(BaseModel):
     role: str  # Founder, Frontend, Backend, Investor, Facilitator
 
 
-class Stakeholder(BaseModel):
-    id: str
-    project_id: str
+class StakeholderResponse(BaseModel):
+    id: int
+    project_id: int
     name: str
     email: str
     role: str
-    branch_name: Optional[str] = None
-    created_at: str
+    github_branch: Optional[str] = None
+    created_at: datetime
 
 
 @router.post("/projects/{project_id}/stakeholders")
-async def add_stakeholder(project_id: str, request: CreateStakeholderRequest):
+async def add_stakeholder(
+    project_id: int,
+    request: CreateStakeholderRequest,
+    db: Session = Depends(get_db)
+):
     """Add a team member to the project"""
     
-    stakeholder_id = str(uuid.uuid4())
-    now = datetime.utcnow().isoformat()
+    # Verify project exists
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        return {
+            "success": False,
+            "data": None,
+            "error": "Project not found"
+        }
     
-    stakeholder = {
-        "id": stakeholder_id,
-        "project_id": project_id,
-        "name": request.name,
-        "email": request.email,
-        "role": request.role,
-        "branch_name": None,  # Will be set when they create a branch
-        "created_at": now,
-    }
+    # Create stakeholder
+    stakeholder = Stakeholder(
+        project_id=project_id,
+        name=request.name,
+        email=request.email,
+        role=request.role
+    )
     
-    stakeholders_db[stakeholder_id] = stakeholder
-    
-    # Add to project's stakeholder list
-    if project_id not in project_stakeholders:
-        project_stakeholders[project_id] = []
-    project_stakeholders[project_id].append(stakeholder_id)
+    db.add(stakeholder)
+    db.commit()
+    db.refresh(stakeholder)
     
     return {
         "success": True,
-        "data": stakeholder,
+        "data": {
+            "id": stakeholder.id,
+            "project_id": stakeholder.project_id,
+            "name": stakeholder.name,
+            "email": stakeholder.email,
+            "role": stakeholder.role,
+            "github_branch": stakeholder.github_branch,
+            "created_at": stakeholder.created_at.isoformat()
+        },
         "error": None
     }
 
 
 @router.get("/projects/{project_id}/stakeholders")
-async def list_stakeholders(project_id: str):
+async def list_stakeholders(project_id: int, db: Session = Depends(get_db)):
     """List all stakeholders for a project"""
     
-    if project_id not in project_stakeholders:
+    # Verify project exists
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
         return {
-            "success": True,
-            "data": [],
-            "error": None
+            "success": False,
+            "data": None,
+            "error": "Project not found"
         }
     
-    stakeholder_ids = project_stakeholders[project_id]
-    stakeholders = [stakeholders_db[sid] for sid in stakeholder_ids if sid in stakeholders_db]
+    stakeholders = db.query(Stakeholder).filter(
+        Stakeholder.project_id == project_id
+    ).all()
     
     return {
         "success": True,
-        "data": stakeholders,
+        "data": [
+            {
+                "id": s.id,
+                "project_id": s.project_id,
+                "name": s.name,
+                "email": s.email,
+                "role": s.role,
+                "github_branch": s.github_branch,
+                "created_at": s.created_at.isoformat()
+            }
+            for s in stakeholders
+        ],
         "error": None
     }
 
 
 @router.get("/projects/{project_id}/stakeholders/{stakeholder_id}")
-async def get_stakeholder(project_id: str, stakeholder_id: str):
+async def get_stakeholder(
+    project_id: int,
+    stakeholder_id: int,
+    db: Session = Depends(get_db)
+):
     """Get a specific stakeholder"""
     
-    if stakeholder_id not in stakeholders_db:
+    stakeholder = db.query(Stakeholder).filter(
+        Stakeholder.id == stakeholder_id,
+        Stakeholder.project_id == project_id
+    ).first()
+    
+    if not stakeholder:
         return {
             "success": False,
             "data": None,
             "error": "Stakeholder not found"
         }
     
-    stakeholder = stakeholders_db[stakeholder_id]
-    
-    if stakeholder["project_id"] != project_id:
-        return {
-            "success": False,
-            "data": None,
-            "error": "Stakeholder not found in this project"
-        }
-    
     return {
         "success": True,
-        "data": stakeholder,
+        "data": {
+            "id": stakeholder.id,
+            "project_id": stakeholder.project_id,
+            "name": stakeholder.name,
+            "email": stakeholder.email,
+            "role": stakeholder.role,
+            "github_branch": stakeholder.github_branch,
+            "created_at": stakeholder.created_at.isoformat()
+        },
         "error": None
     }
 
 
 @router.patch("/projects/{project_id}/stakeholders/{stakeholder_id}")
-async def update_stakeholder(project_id: str, stakeholder_id: str, updates: dict):
+async def update_stakeholder(
+    project_id: int,
+    stakeholder_id: int,
+    updates: dict,
+    db: Session = Depends(get_db)
+):
     """Update stakeholder (role, branch, etc.)"""
     
-    if stakeholder_id not in stakeholders_db:
+    stakeholder = db.query(Stakeholder).filter(
+        Stakeholder.id == stakeholder_id,
+        Stakeholder.project_id == project_id
+    ).first()
+    
+    if not stakeholder:
         return {
             "success": False,
             "data": None,
             "error": "Stakeholder not found"
         }
     
-    stakeholder = stakeholders_db[stakeholder_id]
+    # Update allowed fields
+    allowed_fields = ["name", "email", "role", "github_branch"]
+    for field, value in updates.items():
+        if field in allowed_fields and hasattr(stakeholder, field):
+            setattr(stakeholder, field, value)
     
-    if stakeholder["project_id"] != project_id:
-        return {
-            "success": False,
-            "data": None,
-            "error": "Stakeholder not found in this project"
-        }
-    
-    stakeholder.update(updates)
+    db.commit()
+    db.refresh(stakeholder)
     
     return {
         "success": True,
-        "data": stakeholder,
+        "data": {
+            "id": stakeholder.id,
+            "project_id": stakeholder.project_id,
+            "name": stakeholder.name,
+            "email": stakeholder.email,
+            "role": stakeholder.role,
+            "github_branch": stakeholder.github_branch
+        },
         "error": None
     }
 
 
 @router.delete("/projects/{project_id}/stakeholders/{stakeholder_id}")
-async def remove_stakeholder(project_id: str, stakeholder_id: str):
+async def remove_stakeholder(
+    project_id: int,
+    stakeholder_id: int,
+    db: Session = Depends(get_db)
+):
     """Remove a stakeholder from the project"""
     
-    if stakeholder_id not in stakeholders_db:
+    stakeholder = db.query(Stakeholder).filter(
+        Stakeholder.id == stakeholder_id,
+        Stakeholder.project_id == project_id
+    ).first()
+    
+    if not stakeholder:
         return {
             "success": False,
             "data": None,
             "error": "Stakeholder not found"
         }
     
-    stakeholder = stakeholders_db[stakeholder_id]
-    
-    if stakeholder["project_id"] != project_id:
-        return {
-            "success": False,
-            "data": None,
-            "error": "Stakeholder not found in this project"
-        }
-    
-    # Remove from project's stakeholder list
-    if project_id in project_stakeholders:
-        project_stakeholders[project_id] = [
-            sid for sid in project_stakeholders[project_id] if sid != stakeholder_id
-        ]
-    
     # Delete stakeholder
-    del stakeholders_db[stakeholder_id]
+    db.delete(stakeholder)
+    db.commit()
     
     return {
         "success": True,
         "data": {"deleted": stakeholder_id},
         "error": None
     }
-
