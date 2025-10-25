@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Sparkles } from "lucide-react";
 import { apiClient } from "@/services/api";
 import { toast } from "sonner";
-import type { AppBuildRequest } from "@/types";
+import type { V0BuildRequest } from "@/types";
 
 interface CreaoPromptInputProps {
   onProjectCreated?: (projectId: string, appUrl: string) => void;
@@ -49,14 +49,13 @@ export function CreaoPromptInput({ onProjectCreated }: CreaoPromptInputProps) {
 
       toast.success("Project created! Building app...");
 
-      // Build app
-      const buildRequest: AppBuildRequest = {
-        project_id: projectId,
+      // Build app with V0
+      const buildRequest: V0BuildRequest = {
+        project_name: projectName,
+        requirements: prompt.trim(),
+        deploy_vercel: true,
         spec: {
-          name: projectName,
-          entities: [],
           pages: ["Home", "Dashboard"],
-          requirements: prompt.split("\n").filter(Boolean),
         },
       };
 

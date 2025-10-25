@@ -17,7 +17,7 @@ import { Loader2, Sparkles, FileCode, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useStreamingBuild } from "@/hooks/useStreamingBuild";
 import { apiClient } from "@/services/api";
-import type { AppBuildRequest } from "@/types";
+import type { V0BuildRequest } from "@/types";
 
 interface BuildWithPreviewProps {
   onProjectCreated?: (projectId: string, appUrl: string) => void;
@@ -59,14 +59,14 @@ export function BuildWithPreview({ onProjectCreated }: BuildWithPreviewProps) {
       setProjectId(projectId);
 
       // Build app with streaming
-      const buildRequest: AppBuildRequest = {
-        project_id: projectId,
+      // V0BuildRequest format - simpler than the old AppBuildRequest
+      const buildRequest: V0BuildRequest = {
+        project_name: projectName,
+        requirements: prompt.trim(),  // V0 expects requirements as a string
+        deploy_vercel: true,
         spec: {
-          name: projectName,
-          entities: [],
           pages: ["Home", "Dashboard"],
-          requirements: prompt.split("\n").filter(Boolean),
-        },
+        }
       };
 
       const result = await startBuild(buildRequest);

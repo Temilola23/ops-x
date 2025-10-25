@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from mcp import (
     app_build,
     app_build_hybrid,
+    app_build_v0,  # PURE V0 - NO GEMINI
     repo_patch,
     conflict_scan,
     chat_summarize,
@@ -74,8 +75,9 @@ app.add_middleware(
 app.include_router(projects.router, prefix="/api", tags=["Projects API"])
 
 # Register MCP endpoints
-app.include_router(app_build.router, prefix="/mcp", tags=["MCP - App Build"])
-app.include_router(app_build_hybrid.router, prefix="/mcp", tags=["MCP - Hybrid Build (V0 + Gemini)"])
+app.include_router(app_build_v0.router, tags=["MCP - PURE V0 BUILD (RECOMMENDED)"])  # ⭐ USE THIS ONE
+app.include_router(app_build.router, prefix="/mcp", tags=["MCP - App Build (Legacy Gemini)"])
+app.include_router(app_build_hybrid.router, prefix="/mcp", tags=["MCP - Hybrid Build (V0 + Gemini - BROKEN)"])
 app.include_router(repo_patch.router, prefix="/mcp", tags=["MCP - Repository"])
 app.include_router(conflict_scan.router, prefix="/mcp", tags=["MCP - Conflict"])
 app.include_router(chat_summarize.router, prefix="/mcp", tags=["MCP - Chat"])

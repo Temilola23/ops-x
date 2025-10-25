@@ -85,6 +85,7 @@ export interface Conflict {
 }
 
 // MCP Request/Response types
+// LEGACY - OLD GEMINI FORMAT (DO NOT USE)
 export interface AppBuildRequest {
   project_id: string;
   spec: {
@@ -93,6 +94,17 @@ export interface AppBuildRequest {
     pages: string[];
     requirements: string[];
   };
+}
+
+// NEW V0 FORMAT - USE THIS ONE
+export interface V0BuildRequest {
+  project_name: string;
+  requirements: string;
+  spec?: {
+    pages: string[];
+  };
+  github_repo?: string;
+  deploy_vercel?: boolean;
 }
 
 export interface AppBuildResponse {

@@ -20,6 +20,11 @@ class GitHubAPIClient:
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28"
         }
+        
+        if not self.token:
+            print("WARNING: GITHUB_TOKEN not found in environment")
+        else:
+            print(f"GitHub client initialized with token: {self.token[:8]}...")
     
     async def create_repo(self, name: str, description: str, private: bool = False) -> Dict:
         """Create a new GitHub repository"""
@@ -38,6 +43,7 @@ class GitHubAPIClient:
             
             if response.status_code == 201:
                 repo_data = response.json()
+                print(f"GitHub repo created successfully: {repo_data['html_url']}")
                 return {
                     "success": True,
                     "repo_name": repo_data["full_name"],
@@ -46,9 +52,11 @@ class GitHubAPIClient:
                     "default_branch": repo_data["default_branch"]
                 }
             else:
+                error_msg = f"GitHub API error {response.status_code}: {response.text}"
+                print(f"ERROR creating repo: {error_msg}")
                 return {
                     "success": False,
-                    "error": f"Failed to create repo: {response.text}"
+                    "error": error_msg
                 }
     
     async def get_default_branch_sha(self, repo_full_name: str) -> Optional[str]:
