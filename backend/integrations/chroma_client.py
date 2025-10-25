@@ -5,7 +5,6 @@ Semantic code search powered by Chroma
 
 import os
 import chromadb
-from chromadb.config import Settings
 from typing import List, Dict, Optional
 import hashlib
 
@@ -19,11 +18,8 @@ class ChromaCodeSearch:
         # Persistent storage location
         persist_directory = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
         
-        # Initialize Chroma client
-        self.client = chromadb.Client(Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=persist_directory
-        ))
+        # Initialize Chroma client (new API - no Settings needed)
+        self.client = chromadb.PersistentClient(path=persist_directory)
         
         # Get or create collection for code embeddings
         self.collection = self.client.get_or_create_collection(

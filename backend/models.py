@@ -91,7 +91,7 @@ class ChatMessage(Base):
     message = Column(Text, nullable=False)
     role = Column(String(50))  # User role at time of message
     is_ai = Column(Boolean, default=False)  # Is this from an AI agent?
-    metadata = Column(JSON)  # Extra data (agent type, etc.)
+    extra_data = Column(JSON)  # Extra data (agent type, etc.) - renamed from metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
