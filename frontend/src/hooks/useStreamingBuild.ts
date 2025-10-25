@@ -32,7 +32,7 @@ export function useStreamingBuild() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/mcp/app/build/hybrid`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/mcp/app/build/v0/stream`,
         {
           method: "POST",
           headers: {

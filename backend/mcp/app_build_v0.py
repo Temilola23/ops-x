@@ -104,6 +104,8 @@ async def build_app_with_v0_only(request: V0BuildRequest):
                     private=False
                 )
                 
+                print(f"GitHub create_repo result: {repo_result}")
+                
                 if repo_result.get("success"):
                     github_url = repo_result.get("repo_url")
                     repo_full_name = repo_result.get("repo_name")  # This is username/repo
@@ -234,6 +236,14 @@ async def build_app_with_v0_streaming(request: V0BuildRequest):
                 "files": list(files.keys())
             })
             
+            # Generate preview HTML
+            preview_html = generate_v0_preview_html(all_files, request.project_name)
+            yield create_sse_event({
+                "type": "preview_ready",
+                "html": preview_html,
+                "progress": 87
+            })
+            
             # GitHub + Vercel (if requested)
             if github_client:
                 yield create_sse_event({
@@ -272,6 +282,111 @@ async def build_app_with_v0_streaming(request: V0BuildRequest):
             "X-Accel-Buffering": "no"
         }
     )
+
+
+def generate_v0_preview_html(files: Dict[str, str], project_name: str) -> str:
+    """
+    Generate a clean HTML preview from V0-generated files
+    """
+    
+    # Find the main page file
+    page_tsx = files.get("app/page.tsx", "")
+    
+    # Extract styles from globals.css if available
+    styles = files.get("app/globals.css", "")
+    
+    # Basic HTML template that shows V0 is working
+    if page_tsx:
+        # Simple preview showing V0 generated the code
+        preview = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{project_name} - V0 Preview</title>
+    <style>
+        body {{
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #ededed;
+        }}
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+        }}
+        .header {{
+            text-align: center;
+            margin-bottom: 40px;
+        }}
+        .badge {{
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }}
+        h1 {{
+            margin: 10px 0;
+            font-size: 2.5em;
+        }}
+        .status {{
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }}
+        .file-list {{
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }}
+        .file {{
+            padding: 8px;
+            border-bottom: 1px solid #222;
+        }}
+        .file:last-child {{
+            border-bottom: none;
+        }}
+        .success {{
+            color: #10b981;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="badge">V0 Generated</div>
+            <h1>{project_name}</h1>
+            <p>Your app has been generated successfully!</p>
+        </div>
+        
+        <div class="status">
+            <h3 class="success">✓ V0 Code Generation Complete</h3>
+            <p>V0 has generated {len(files)} files for your Next.js application.</p>
+        </div>
+        
+        <div class="file-list">
+            <h3>Generated Files:</h3>
+            {"".join([f'<div class="file">✓ {fname}</div>' for fname in sorted(files.keys())])}
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; opacity: 0.7;">
+            <p>The actual app is being deployed to GitHub and Vercel...</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+        return preview
+    else:
+        # Fallback
+        return f"<h1>{project_name}</h1><p>V0 generated {len(files)} files</p>"
 
 
 # Health check
