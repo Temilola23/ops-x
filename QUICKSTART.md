@@ -1,4 +1,4 @@
-# 🚀 OPS-X Quick Start Guide
+#  OPS-X Quick Start Guide
 
 ## Step 1: Both Team Members (First 30 minutes)
 
@@ -34,7 +34,7 @@ make setup  # or manually:
 ```bash
 cd backend
 python main.py
-# Should see: "🚀 Starting OPS-X Backend Server..."
+# Should see: " Starting OPS-X Backend Server..."
 # API docs at: http://localhost:8000/docs
 ```
 
@@ -133,9 +133,9 @@ gh pr create --title "Backend: Creao and Janitor integration" --body "Implements
 
 ## Ready? Let's Go! 🎯
 
-1. ✅ Environment setup complete
-2. ✅ Both can see backend and frontend running
-3. ✅ First API call working
-4. 🚀 Start building the future!
+1.  Environment setup complete
+2.  Both can see backend and frontend running
+3.  First API call working
+4.  Start building the future!
 
 Remember: It's a hackathon - done is better than perfect!

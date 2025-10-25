@@ -1,8 +1,8 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
 import type {
   ApiResponse,
-  CreaoRequest,
-  CreaoResponse,
+  AppBuildRequest,
+  AppBuildResponse,
   RepoPatchRequest,
   RepoPatchResponse,
   ConflictScanRequest,
@@ -55,10 +55,10 @@ class ApiClient {
   }
 
   // MCP Endpoints
-  async buildWithCreao(
-    request: CreaoRequest
-  ): Promise<ApiResponse<CreaoResponse>> {
-    const { data } = await this.client.post("/mcp/creao/build", request);
+  async buildApp(
+    request: AppBuildRequest
+  ): Promise<ApiResponse<AppBuildResponse>> {
+    const { data } = await this.client.post("/mcp/app/build", request);
     return data;
   }
 

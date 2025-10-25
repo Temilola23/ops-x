@@ -1,4 +1,4 @@
-# Frontend Quick Start 🚀
+# Frontend Quick Start 
 
 ## Get Running in 3 Steps
 
@@ -23,25 +23,25 @@ npm run dev
 
 ### Components
 
-- ✅ CreaoPromptInput - One-prompt build interface
-- ✅ ChatRoom - Multiplayer chat with roles
-- ✅ AgentPanel - Real-time agent status
-- ✅ BranchVisualizer - Git-style branches
-- ✅ StakeholderDashboard - Team management
-- ✅ ConflictResolver - Merge conflict UI
+-  CreaoPromptInput - One-prompt build interface
+-  ChatRoom - Multiplayer chat with roles
+-  AgentPanel - Real-time agent status
+-  BranchVisualizer - Git-style branches
+-  StakeholderDashboard - Team management
+-  ConflictResolver - Merge conflict UI
 
 ### Services
 
-- ✅ API Client - All backend endpoints
-- ✅ WebSocket - Real-time events
-- ✅ Auth - Token management
+-  API Client - All backend endpoints
+-  WebSocket - Real-time events
+-  Auth - Token management
 
 ### Hooks
 
-- ✅ useWebSocket - WS connection
-- ✅ useAgentStatus - Agent monitoring
-- ✅ useChatRoom - Chat state
-- ✅ useProject - Project data
+-  useWebSocket - WS connection
+-  useAgentStatus - Agent monitoring
+-  useChatRoom - Chat state
+-  useProject - Project data
 
 ## Backend Integration Points
 

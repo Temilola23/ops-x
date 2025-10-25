@@ -6,7 +6,7 @@ The frontend is now fully scaffolded with Next.js 14, shadcn/ui, and all necessa
 
 ## What's Been Set Up
 
-### ✅ Core Infrastructure
+###  Core Infrastructure
 
 - **Next.js 14** with App Router
 - **TypeScript** with strict mode
@@ -16,7 +16,7 @@ The frontend is now fully scaffolded with Next.js 14, shadcn/ui, and all necessa
 - **Socket.IO Client** for real-time features
 - **Zustand** for client state (installed but not yet used)
 
-### ✅ Services Layer
+###  Services Layer
 
 - **API Client** (`src/services/api.ts`)
 
@@ -37,14 +37,14 @@ The frontend is now fully scaffolded with Next.js 14, shadcn/ui, and all necessa
   - Token management
   - User session handling
 
-### ✅ Custom Hooks
+###  Custom Hooks
 
 - `useWebSocket` - WebSocket connection management
 - `useAgentStatus` - Real-time agent monitoring
 - `useChatRoom` - Chat state with real-time updates
 - `useProject` - Project data fetching
 
-### ✅ Components Built
+###  Components Built
 
 #### Main Feature Components
 
@@ -62,13 +62,13 @@ The frontend is now fully scaffolded with Next.js 14, shadcn/ui, and all necessa
 - Dialog, Tabs, ScrollArea
 - Sonner (Toast notifications)
 
-### ✅ Pages Created
+###  Pages Created
 
 - `/` - Landing page with hero and prompt input
 - `/dashboard/[projectId]` - Project dashboard with tabs
 - `/chat/[chatId]` - Multiplayer chat room
 
-### ✅ Type Definitions
+###  Type Definitions
 
 Complete TypeScript interfaces for:
 
@@ -393,4 +393,4 @@ app.add_middleware(
 
 Check the main README at `/docs/OPS-X_README.md` for architecture overview.
 
-Good luck at Cal Hacks! 🚀
+Good luck at Cal Hacks! 

@@ -105,17 +105,17 @@ You should see all green checkmarks!
 ## 🏃‍♂️ Step 4: Quick Wins for Prizes
 
 ### Janitor AI Prize ($200K internship):
-- ✅ You have the API working
+-  You have the API working
 - Need: Multiplayer chat with role management
 - Time estimate: 3-4 hours
 
 ### Creao Prize ($4K):
-- ✅ You have the invitation code
+-  You have the invitation code
 - Need: Register on platform + custom MCP
 - Time estimate: 2-3 hours
 
 ### Fetch.ai Prize ($5K):
-- ✅ You have the API key
+-  You have the API key
 - Need: Deploy 2+ agents with chat protocol
 - Time estimate: 3-4 hours
 
@@ -142,6 +142,6 @@ Frontend Status:
 4. **GitHub integration** (shows real VCS)
 5. **Everything else** (if time permits)
 
-## GO GO GO! 🚀
+## GO GO GO! 
 
 You have 4 hours to get the first demo working. Start with Janitor AI - it's ready and the prize is huge!

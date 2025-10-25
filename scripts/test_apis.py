@@ -36,7 +36,7 @@ async def test_janitor_ai():
             
             if response.status_code == 200:
                 data = response.json()
-                print("✅ Janitor AI connected successfully!")
+                print(" Janitor AI connected successfully!")
                 print(f"   Response: {data.get('choices', [{}])[0].get('message', {}).get('content', 'No content')[:100]}...")
                 return True
             else:
@@ -53,7 +53,7 @@ async def test_janitor_ai():
 async def test_creao():
     """Test Creao (no API needed, just verify invitation code)"""
     print("\n🎨 Testing Creao...")
-    print(f"✅ Creao invitation code ready: {CREAO_INVITATION_CODE}")
+    print(f" Creao invitation code ready: {CREAO_INVITATION_CODE}")
     print("   Note: Register at Creao platform and use this code")
     return True
 
@@ -62,7 +62,7 @@ async def test_fetchai():
     """Test Fetch.ai API key format"""
     print("\n🤖 Testing Fetch.ai...")
     if FETCHAI_API_KEY.startswith("sk_") and len(FETCHAI_API_KEY) > 20:
-        print("✅ Fetch.ai API key format looks valid")
+        print(" Fetch.ai API key format looks valid")
         print("   Note: Deploy agents to Agentverse to fully test")
         return True
     else:
@@ -72,7 +72,7 @@ async def test_fetchai():
 
 async def main():
     """Run all API tests"""
-    print("🚀 OPS-X API Connection Test\n")
+    print(" OPS-X API Connection Test\n")
     
     results = await asyncio.gather(
         test_janitor_ai(),
@@ -81,9 +81,9 @@ async def main():
     )
     
     print("\n📊 Summary:")
-    print(f"   Janitor AI: {'✅ Working' if results[0] else '❌ Failed'}")
-    print(f"   Creao: {'✅ Ready' if results[1] else '❌ Failed'}")
-    print(f"   Fetch.ai: {'✅ Valid' if results[2] else '❌ Failed'}")
+    print(f"   Janitor AI: {' Working' if results[0] else '❌ Failed'}")
+    print(f"   Creao: {' Ready' if results[1] else '❌ Failed'}")
+    print(f"   Fetch.ai: {' Valid' if results[2] else '❌ Failed'}")
     
     if all(results):
         print("\n🎉 All APIs ready! You can start building!")

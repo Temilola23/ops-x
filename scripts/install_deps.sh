@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 OPS-X Dependency Installation"
+echo " OPS-X Dependency Installation"
 echo "================================"
 
 # Check if we're in a virtual environment
@@ -37,7 +37,7 @@ else
 fi
 
 echo ""
-echo "✅ Installation complete!"
+echo " Installation complete!"
 echo ""
 echo "Next steps:"
 echo "1. Copy .env.example to .env and add your API keys"
