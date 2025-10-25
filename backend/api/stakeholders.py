@@ -3,6 +3,7 @@ Stakeholders API - Team member management for projects
 Now using PostgreSQL with SQLAlchemy
 """
 
+import os
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -272,8 +273,7 @@ async def invite_team_member(
             project_id=project_id,
             name=request.name,
             email=request.email,
-            role=request.role,
-            user_id=None  # Will be linked when user signs up
+            role=request.role
         )
         
         db.add(stakeholder)
@@ -301,15 +301,21 @@ async def invite_team_member(
         
         # Get inviter name (project owner)
         inviter = db.query(User).filter(User.id == project.owner_id).first()
-        inviter_name = inviter.name if inviter else "Team Lead"
+        if inviter:
+            inviter_name = inviter.name or inviter.email or "Project Creator"
+        else:
+            inviter_name = "Team Lead"
         
         # Send team invite email
         email_sent = send_team_invite_email(
-            request.email,
-            inviter_name,
-            project.name,
-            otp,
-            request.role
+            to_email=request.email,
+            inviter_name=inviter_name,
+            project_name=project.name,
+            otp=otp,
+            role=request.role,
+            project_id=project_id,
+            stakeholder_id=stakeholder.id,
+            invite_url=os.getenv("FRONTEND_URL", "http://localhost:3000")
         )
         
         if email_sent:
