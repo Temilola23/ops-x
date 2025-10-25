@@ -99,12 +99,12 @@ async def build_app_hybrid_stream(request: AppBuildRequest):
                     yield create_sse_event({
                         "type": "status",
                         "phase": "ui_complete",
-                        "message": "✅ UI components generated with V0!",
+                        "message": " UI components generated with V0!",
                         "progress": 40
                     })
                     
                 except Exception as e:
-                    print(f"⚠️  V0 generation failed, falling back to Gemini: {e}")
+                    print(f"  V0 generation failed, falling back to Gemini: {e}")
                     # Fallback to Gemini if V0 fails
                     request.use_v0 = False
             
@@ -186,7 +186,7 @@ async def build_app_hybrid_stream(request: AppBuildRequest):
             yield create_sse_event({
                 "type": "status",
                 "phase": "code_complete",
-                "message": "✅ Code generation complete!",
+                "message": " Code generation complete!",
                 "progress": 65
             })
             
@@ -247,7 +247,7 @@ async def build_app_hybrid_stream(request: AppBuildRequest):
             )
             
             if not push_result["success"]:
-                print(f"⚠️  Some files failed to push: {push_result}")
+                print(f"  Some files failed to push: {push_result}")
             
             # Phase 6: Deploy (optional)
             app_url = repo_url
@@ -269,7 +269,7 @@ async def build_app_hybrid_stream(request: AppBuildRequest):
                     if deploy_result.get("success"):
                         app_url = deploy_result.get("url", repo_url)
                 except Exception as e:
-                    print(f"⚠️  Vercel deployment failed: {e}")
+                    print(f"  Vercel deployment failed: {e}")
             
             # Phase 7: Complete!
             yield create_sse_event({
@@ -307,11 +307,18 @@ def generate_preview_html(files: Dict[str, str], project_name: str) -> str:
     This shows in iframe while the real app is being deployed
     """
     
-    # Try to find the main page component
-    page_file = files.get("src/app/page.tsx", "")
+    # Try to find the main page component (check both with and without src/)
+    page_file = files.get("app/page.tsx", "") or files.get("src/app/page.tsx", "")
     
     if not page_file:
-        page_file = "<div>Loading preview...</div>"
+        # Try to find any component file
+        for filename, content in files.items():
+            if filename.endswith("page.tsx") or filename.endswith("Page.tsx"):
+                page_file = content
+                break
+        
+        if not page_file:
+            page_file = "<div>Loading preview...</div>"
     
     # Simple JSX to HTML conversion (can be enhanced)
     html_content = simplify_jsx_to_html(page_file)

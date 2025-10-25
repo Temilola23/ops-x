@@ -207,7 +207,7 @@ export function LiveBuildView() {
           <h3 className="font-semibold">Files Generated:</h3>
           {files.map(file => (
             <div key={file} className="text-sm text-gray-600">
-              ✅ {file}
+               {file}
             </div>
           ))}
         </div>
@@ -282,15 +282,15 @@ Your frontend engineer needs to:
 
 | Task | V0 | Gemini |
 |------|-----|--------|
-| **UI Components** | ✅ Primary | ❌ Fallback |
-| **Page Layouts** | ✅ Primary | ❌ Fallback |
-| **Tailwind CSS** | ✅ Primary | ❌ Fallback |
-| **shadcn/ui** | ✅ Built-in | ❌ Manual |
-| **Responsive Design** | ✅ Automatic | ❌ Prompt-based |
-| **API Routes** | ❌ | ✅ Primary |
-| **Server Actions** | ❌ | ✅ Primary |
-| **Database Schema** | ❌ | ✅ Primary |
-| **Business Logic** | ❌ | ✅ Primary |
+| **UI Components** |  Primary |  Fallback |
+| **Page Layouts** |  Primary |  Fallback |
+| **Tailwind CSS** |  Primary |  Fallback |
+| **shadcn/ui** |  Built-in |  Manual |
+| **Responsive Design** |  Automatic |  Prompt-based |
+| **API Routes** |  |  Primary |
+| **Server Actions** |  |  Primary |
+| **Database Schema** |  |  Primary |
+| **Business Logic** |  |  Primary |
 
 **Result**: Beautiful UI + Solid Backend = Perfect Hackathon Demo!
 
@@ -394,10 +394,10 @@ Your frontend engineer needs to:
 │  LEFT PANEL              │  RIGHT PANEL      │
 │  ┌──────────────────┐   │  ┌─────────────┐  │
 │  │ Build Status     │   │  │ Live Preview│  │
-│  │ ✅ Planning...   │   │  │ [Blurred]   │  │
+│  │  Planning...   │   │  │ [Blurred]   │  │
 │  │ ⏳ V0 UI...      │   │  │ [Skeleton]  │  │
 │  │ ⏳ Gemini logic...│   │  │ [Revealing] │  │
-│  │ ✅ Preview ready!│   │  │ [Full View] │  │
+│  │  Preview ready!│   │  │ [Full View] │  │
 │  │                  │   │  │             │  │
 │  │ Files:           │   │  │ <iframe>    │  │
 │  │ • page.tsx      │   │  │  srcDoc=    │  │
@@ -416,16 +416,16 @@ Your frontend engineer needs to:
 ## Your Backend is Ready!
 
 ### What You Have:
-✅ V0 API integration  
-✅ Gemini integration (existing)  
-✅ Hybrid streaming endpoint  
-✅ Live preview HTML generator  
-✅ GitHub push (existing)  
-✅ Vercel deployment (optional, existing)  
-✅ SSE streaming for real-time updates  
-✅ Progress tracking  
-✅ Error handling  
-✅ Fallback to Gemini if V0 unavailable  
+ V0 API integration  
+ Gemini integration (existing)  
+ Hybrid streaming endpoint  
+ Live preview HTML generator  
+ GitHub push (existing)  
+ Vercel deployment (optional, existing)  
+ SSE streaming for real-time updates  
+ Progress tracking  
+ Error handling  
+ Fallback to Gemini if V0 unavailable  
 
 ### What You Need:
 1. **Get V0 API key** (free trial: https://v0.dev)

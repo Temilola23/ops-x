@@ -217,7 +217,7 @@ async def build_app(request: AppBuildRequest, background_tasks: BackgroundTasks)
             )
     
     except Exception as e:
-        print(f"❌ Build error: {str(e)}")
+        print(f" Build error: {str(e)}")
         build_status[project_id]["status"] = "error"
         build_status[project_id]["error"] = str(e)
         

@@ -214,7 +214,7 @@ async def build_app_stream(request: AppBuildRequest):
                 "repo_url": repo_url,
                 "preview_url": preview_html,
                 "progress": 100,
-                "message": "✅ Your app is ready!"
+                "message": " Your app is ready!"
             })
             
         except Exception as e:
@@ -506,7 +506,7 @@ Why: Best UI quality for UI-specific tasks
 | UI Quality | Good | Excellent |
 | Backend Quality | Excellent | Excellent |
 | Complexity | Simple | Complex |
-| **Hackathon?** | ✅ YES | ❌ Too much |
+| **Hackathon?** |  YES |  Too much |
 
 ---
 

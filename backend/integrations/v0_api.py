@@ -26,50 +26,56 @@ class V0Generator:
         framework: str = "nextjs"
     ) -> Optional[Dict[str, str]]:
         """
-        Generate a single UI component with V0
+        Generate a single UI component with V0 using the Model API
         
-        Args:
-            prompt: Description of the component to generate
-            component_name: Name of the component (e.g., "TodoList")
-            framework: Target framework (nextjs, react)
-        
-        Returns:
-            Dict with filename and code content
+        Based on V0 API docs: https://v0.app/docs/api/model
         """
         if not self.api_key:
             return None
         
         try:
+            # V0 Model API endpoint - correct path
+            url = f"{self.base_url}/chat/completions"
+            
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
-                    f"{self.base_url}/generate",
+                    url,
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
                     },
                     json={
-                        "prompt": prompt,
-                        "framework": framework,
-                        "component_name": component_name,
-                        "style": "modern",  # modern, minimal, colorful
-                        "include_types": True,
-                        "include_tailwind": True,
+                        "model": "v0",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                        "max_tokens": 4096
                     }
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    return {
-                        "filename": f"src/components/{component_name}.tsx",
-                        "content": data.get("code", ""),
-                        "preview_url": data.get("preview_url", ""),
-                    }
+                    # V0 uses OpenAI format - extract from choices
+                    choices = data.get("choices", [])
+                    if choices and len(choices) > 0:
+                        content = choices[0].get("message", {}).get("content", "")
+                        if content:
+                            return {
+                                "filename": f"components/{component_name}.tsx",
+                                "content": content,
+                                "preview_url": "",  # V0 doesn't return preview URL in this format
+                            }
+                    print("V0 API returned no content")
+                    return None
                 else:
-                    print(f" V0 API error: {response.status_code}")
+                    print(f"V0 API error: {response.status_code} - {response.text}")
                     return None
                     
         except Exception as e:
-            print(f" V0 API error: {e}")
+            print(f"V0 API exception: {e}")
             return None
     
     async def generate_full_app(

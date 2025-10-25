@@ -58,7 +58,8 @@ class ApiClient {
   async buildApp(
     request: AppBuildRequest
   ): Promise<ApiResponse<AppBuildResponse>> {
-    const { data } = await this.client.post("/mcp/app/build", request);
+    // Use hybrid endpoint for V0 + Gemini
+    const { data } = await this.client.post("/mcp/app/build/hybrid", request);
     return data;
   }
 

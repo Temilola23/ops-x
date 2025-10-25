@@ -40,11 +40,11 @@ async def test_janitor_ai():
                 print(f"   Response: {data.get('choices', [{}])[0].get('message', {}).get('content', 'No content')[:100]}...")
                 return True
             else:
-                print(f"❌ Janitor AI error: {response.status_code} - {response.text}")
+                print(f" Janitor AI error: {response.status_code} - {response.text}")
                 return False
                 
         except Exception as e:
-            print(f"❌ Janitor AI connection failed: {type(e).__name__}: {str(e)}")
+            print(f" Janitor AI connection failed: {type(e).__name__}: {str(e)}")
             import traceback
             traceback.print_exc()
             return False
@@ -66,7 +66,7 @@ async def test_fetchai():
         print("   Note: Deploy agents to Agentverse to fully test")
         return True
     else:
-        print("❌ Fetch.ai API key format seems invalid")
+        print(" Fetch.ai API key format seems invalid")
         return False
 
 
@@ -81,9 +81,9 @@ async def main():
     )
     
     print("\n📊 Summary:")
-    print(f"   Janitor AI: {' Working' if results[0] else '❌ Failed'}")
-    print(f"   Creao: {' Ready' if results[1] else '❌ Failed'}")
-    print(f"   Fetch.ai: {' Valid' if results[2] else '❌ Failed'}")
+    print(f"   Janitor AI: {' Working' if results[0] else ' Failed'}")
+    print(f"   Creao: {' Ready' if results[1] else ' Failed'}")
+    print(f"   Fetch.ai: {' Valid' if results[2] else ' Failed'}")
     
     if all(results):
         print("\n🎉 All APIs ready! You can start building!")

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreaoPromptInput } from "@/components/CreaoPromptInput";
+import { BuildWithPreview } from "@/components/BuildWithPreview";
 import { Button } from "@/components/ui/button";
 import { Sparkles, GitBranch, Users, Zap } from "lucide-react";
 
@@ -13,6 +13,11 @@ export default function HomePage() {
   const handleProjectCreated = (projectId: string) => {
     router.push(`/dashboard/${projectId}`);
   };
+
+  // Show full-screen build view when building
+  if (showPrompt) {
+    return <BuildWithPreview onProjectCreated={handleProjectCreated} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -35,8 +40,7 @@ export default function HomePage() {
         </div>
 
         {/* Features */}
-        {!showPrompt && (
-          <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-5xl mx-auto">
             <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
               <Sparkles className="w-8 h-8 text-purple-500 mb-4" />
               <h3 className="text-xl font-bold mb-2">One Prompt Build</h3>
@@ -61,11 +65,9 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-        )}
 
-        {/* CTA or Prompt Input */}
+        {/* CTA */}
         <div className="max-w-4xl mx-auto">
-          {!showPrompt ? (
             <div className="text-center">
               <Button
                 size="lg"
@@ -76,15 +78,10 @@ export default function HomePage() {
                 Start Building Your Startup
               </Button>
               <p className="mt-4 text-sm text-muted-foreground">
-                Powered by Creao, Fetch.ai, Janitor AI, and more
+                Powered by V0, Google Gemini, Fetch.ai, Janitor AI, and more
               </p>
             </div>
-          ) : (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <CreaoPromptInput onProjectCreated={handleProjectCreated} />
-            </div>
-          )}
-        </div>
+          </div>
 
         {/* Tech Stack */}
         <div className="mt-20 text-center">
