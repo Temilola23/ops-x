@@ -99,6 +99,7 @@ Requirements:
         setChatId(result.data.chatId || "");
         setPreviewUrl(result.data.previewUrl || "");
         setFiles(result.data.files || []);
+        console.log("files", result, files);
         setLoadingPhase("ready");
         toast.success("Preview ready! 🎉");
 
