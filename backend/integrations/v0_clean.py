@@ -51,11 +51,19 @@ class V0CleanGenerator:
         
         # Craft V0-specific prompt based on their docs
         # V0 is framework-aware and optimized for Next.js
-        prompt = f"""Create a complete, production-ready Next.js 14 application called "{project_name}".
+        prompt = f"""Create a complete, SELF-CONTAINED, production-ready Next.js 14 application called "{project_name}".
 
 USER REQUIREMENTS: {user_requirements}
 
 PAGES TO INCLUDE: {", ".join(pages)}
+
+CRITICAL RULES:
+- ALL code must be COMPLETE and SELF-CONTAINED in each file
+- NO references to components that don't exist in the response
+- If you need an additional component, DEFINE IT in the same file
+- Use ONLY standard Tailwind classes
+- Include ALL imports at the top of each file
+- EVERY component must be fully functional standalone
 
 TECHNICAL REQUIREMENTS:
 - Next.js 14 with App Router

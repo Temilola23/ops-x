@@ -111,6 +111,10 @@ async def build_app_with_v0_only(request: V0BuildRequest):
                     repo_full_name = repo_result.get("repo_name")  # This is username/repo
                     print(f"✓ GitHub repo created: {github_url}")
                     
+                    # Initialize empty repo
+                    print("Initializing repository...")
+                    await github_client.initialize_empty_repo(repo_full_name)
+                    
                     # Push files to repo
                     print("Pushing files to GitHub...")
                     
@@ -270,9 +274,19 @@ async def build_app_with_v0_streaming(request: V0BuildRequest):
                             "type": "status",
                             "phase": "github_created",
                             "message": f"Repository created: {github_url}",
-                            "progress": 92,
+                            "progress": 91,
                             "github_url": github_url
                         })
+                        
+                        # Initialize empty repo with README (required for first push)
+                        yield create_sse_event({
+                            "type": "status",
+                            "phase": "github_init",
+                            "message": "Initializing repository...",
+                            "progress": 92
+                        })
+                        
+                        await github_client.initialize_empty_repo(repo_full_name)
                         
                         # Push files
                         yield create_sse_event({
@@ -408,11 +422,17 @@ def generate_v0_preview_html(files: Dict[str, str], project_name: str) -> str:
     
     <script type="text/babel">
         // V0-generated component code
-        {page_tsx.replace('export default', 'const App =')}
-        
-        // Render the app
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        try {{
+            {page_tsx.replace('export default', 'const App =')}
+            
+            // Render the app
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+        }} catch (err) {{
+            console.error('Component error:', err);
+            // Fallback to showing code structure
+            throw err;
+        }}
     </script>
     
     <script>
