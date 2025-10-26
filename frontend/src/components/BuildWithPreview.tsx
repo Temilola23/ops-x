@@ -48,7 +48,7 @@ export function BuildWithPreview({ onProjectCreated }: BuildWithPreviewProps) {
   // GitHub state
   const [repoUrl, setRepoUrl] = useState("");
   const [isPushingToGitHub, setIsPushingToGitHub] = useState(false);
-  const [backendProjectId, setBackendProjectId] = useState<string | null>(null);
+  const [backendProjectId, setBackendProjectId] = useState<number | null>(null);
 
   // Loading states
   const [loadingPhase, setLoadingPhase] = useState<
@@ -75,7 +75,7 @@ export function BuildWithPreview({ onProjectCreated }: BuildWithPreviewProps) {
         throw new Error("Failed to create project");
       }
 
-      const projectId = projectResponse.data.id;
+      const projectId = Number(projectResponse.data.id);
       setBackendProjectId(projectId);
 
       // Step 2: Create full prompt with project context
@@ -105,7 +105,7 @@ Requirements:
 
         // Notify parent component
         if (onProjectCreated && projectId) {
-          onProjectCreated(projectId);
+          onProjectCreated(String(projectId));
         }
       } else {
         toast.error(result.error || "Build failed");
@@ -121,7 +121,16 @@ Requirements:
   };
 
   const handlePushToGitHub = async () => {
+    console.log("🔍 Push to GitHub - Debug Info:", {
+      backendProjectId,
+      chatId,
+      filesCount: files.length,
+      projectName,
+      previewUrl: previewUrl?.substring(0, 50) + "...",
+    });
+
     if (!backendProjectId || !chatId || files.length === 0) {
+      console.error("❌ Missing required data for GitHub push");
       toast.error("No project to push");
       return;
     }
@@ -139,9 +148,17 @@ Requirements:
         description: `Generated with v0.dev - ${projectName}`,
       });
 
+      console.log("📦 GitHub Response:", {
+        success: response.success,
+        action: response.data?.action,
+        repoUrl: response.data?.repo_url,
+      });
+
       if (response.success && response.data) {
         setRepoUrl(response.data.repo_url);
-        toast.success("Code pushed to GitHub! 🎉");
+        const action =
+          response.data.action === "created" ? "created" : "updated";
+        toast.success(`Code ${action} on GitHub! 🎉`);
       } else {
         toast.error(response.error || "Failed to push to GitHub");
       }

@@ -1,114 +1,128 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Users, UserPlus, Mail, Calendar } from 'lucide-react'
-import { isAuthenticated, getCurrentUser, logout } from '@/lib/auth'
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Users, UserPlus, Mail, Calendar } from "lucide-react";
+import { isAuthenticated, getCurrentUser, logout } from "@/lib/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8432";
 
 interface Stakeholder {
-  id: number
-  name: string
-  email: string
-  role: string
-  github_branch: string | null
-  created_at: string
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  github_branch: string | null;
+  created_at: string;
 }
 
 export default function TeamDashboard() {
-  const params = useParams()
-  const router = useRouter()
-  const projectId = params.projectId as string
+  const params = useParams();
+  const router = useRouter();
+  const projectId = params.projectId as string;
 
-  const [stakeholders, setStakeholders] = useState<Stakeholder[]>([])
-  const [showInvite, setShowInvite] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
+  const [showInvite, setShowInvite] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [inviteForm, setInviteForm] = useState({
-    name: '',
-    email: '',
-    role: 'Frontend'
-  })
-  const [inviteMessage, setInviteMessage] = useState('')
+    name: "",
+    email: "",
+    role: "Frontend",
+  });
+  const [inviteMessage, setInviteMessage] = useState("");
 
   useEffect(() => {
     // Check auth
     if (!isAuthenticated()) {
-      router.push('/')
-      return
+      router.push("/");
+      return;
     }
-    
-    loadStakeholders()
-  }, [projectId, router])
+
+    loadStakeholders();
+  }, [projectId, router]);
 
   const loadStakeholders = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/projects/${projectId}/stakeholders`)
-      const data = await res.json()
+      const res = await fetch(
+        `${API_URL}/api/projects/${projectId}/stakeholders`
+      );
+      const data = await res.json();
       if (data.success) {
-        setStakeholders(data.data)
+        setStakeholders(data.data);
       }
     } catch (err) {
-      console.error('Failed to load stakeholders:', err)
+      console.error("Failed to load stakeholders:", err);
     }
-  }
+  };
 
   const handleInvite = async () => {
     if (!inviteForm.name || !inviteForm.email) {
-      alert('Please fill in all fields')
-      return
+      alert("Please fill in all fields");
+      return;
     }
 
-    setLoading(true)
-    setInviteMessage('')
+    setLoading(true);
+    setInviteMessage("");
 
     try {
       const res = await fetch(`${API_URL}/api/projects/${projectId}/invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inviteForm)
-      })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inviteForm),
+      });
 
-      const data = await res.json()
-      
+      const data = await res.json();
+
       if (data.success) {
-        setInviteMessage(data.data.message)
-        loadStakeholders()
-        
+        setInviteMessage(data.data.message);
+        loadStakeholders();
+
         // Reset form after 5 seconds
         setTimeout(() => {
-          setShowInvite(false)
-          setInviteMessage('')
-          setInviteForm({ name: '', email: '', role: 'Frontend' })
-        }, 5000)
+          setShowInvite(false);
+          setInviteMessage("");
+          setInviteForm({ name: "", email: "", role: "Frontend" });
+        }, 5000);
       } else {
-        alert(data.error || 'Failed to send invitation')
+        alert(data.error || "Failed to send invitation");
       }
     } catch (err) {
-      alert('Network error. Please try again.')
+      alert("Network error. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getRoleBadgeColor = (role: string) => {
     const colors: Record<string, string> = {
-      'Founder': 'bg-purple-500 hover:bg-purple-600',
-      'Frontend': 'bg-blue-500 hover:bg-blue-600',
-      'Backend': 'bg-green-500 hover:bg-green-600',
-      'Investor': 'bg-yellow-500 hover:bg-yellow-600',
-      'Facilitator': 'bg-pink-500 hover:bg-pink-600'
-    }
-    return colors[role] || 'bg-gray-500 hover:bg-gray-600'
-  }
+      Founder: "bg-purple-500 hover:bg-purple-600",
+      Frontend: "bg-blue-500 hover:bg-blue-600",
+      Backend: "bg-green-500 hover:bg-green-600",
+      Investor: "bg-yellow-500 hover:bg-yellow-600",
+      Facilitator: "bg-pink-500 hover:bg-pink-600",
+    };
+    return colors[role] || "bg-gray-500 hover:bg-gray-600";
+  };
 
-  const user = getCurrentUser()
+  const user = getCurrentUser();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
@@ -153,7 +167,7 @@ export default function TeamDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">With Branches</p>
                   <p className="text-3xl font-bold">
-                    {stakeholders.filter(s => s.github_branch).length}
+                    {stakeholders.filter((s) => s.github_branch).length}
                   </p>
                 </div>
                 <Calendar className="h-10 w-10 text-blue-600 opacity-50" />
@@ -167,7 +181,7 @@ export default function TeamDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">Pending</p>
                   <p className="text-3xl font-bold">
-                    {stakeholders.filter(s => !s.github_branch).length}
+                    {stakeholders.filter((s) => !s.github_branch).length}
                   </p>
                 </div>
                 <Mail className="h-10 w-10 text-pink-600 opacity-50" />
@@ -184,7 +198,7 @@ export default function TeamDashboard() {
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             <UserPlus className="h-4 w-4 mr-2" />
-            {showInvite ? 'Cancel' : 'Invite Member'}
+            {showInvite ? "Cancel" : "Invite Member"}
           </Button>
         </div>
 
@@ -203,7 +217,9 @@ export default function TeamDashboard() {
                   <Input
                     id="name"
                     value={inviteForm.name}
-                    onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                    onChange={(e) =>
+                      setInviteForm({ ...inviteForm, name: e.target.value })
+                    }
                     placeholder="John Doe"
                     disabled={loading}
                   />
@@ -215,7 +231,9 @@ export default function TeamDashboard() {
                     id="email"
                     type="email"
                     value={inviteForm.email}
-                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                    onChange={(e) =>
+                      setInviteForm({ ...inviteForm, email: e.target.value })
+                    }
                     placeholder="john@example.com"
                     disabled={loading}
                   />
@@ -226,7 +244,9 @@ export default function TeamDashboard() {
                 <Label htmlFor="role">Role</Label>
                 <Select
                   value={inviteForm.role}
-                  onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}
+                  onValueChange={(value) =>
+                    setInviteForm({ ...inviteForm, role: value })
+                  }
                   disabled={loading}
                 >
                   <SelectTrigger>
@@ -244,7 +264,9 @@ export default function TeamDashboard() {
 
               {inviteMessage && (
                 <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <p className="text-sm font-semibold text-green-800">Invitation Sent!</p>
+                  <p className="text-sm font-semibold text-green-800">
+                    Invitation Sent!
+                  </p>
                   <p className="text-xs text-green-600 mt-1">{inviteMessage}</p>
                 </div>
               )}
@@ -254,7 +276,7 @@ export default function TeamDashboard() {
                 disabled={!inviteForm.name || !inviteForm.email || loading}
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               >
-                {loading ? 'Sending Invitation...' : 'Send Invitation'}
+                {loading ? "Sending Invitation..." : "Send Invitation"}
               </Button>
             </CardContent>
           </Card>
@@ -269,10 +291,12 @@ export default function TeamDashboard() {
                   <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl">
                     {member.name.charAt(0).toUpperCase()}
                   </div>
-                  
+
                   <div>
                     <h3 className="font-semibold text-lg">{member.name}</h3>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {member.email}
+                    </p>
                     {member.github_branch && (
                       <p className="text-xs text-blue-600 mt-1 font-mono">
                         Branch: {member.github_branch}
@@ -281,7 +305,9 @@ export default function TeamDashboard() {
                   </div>
                 </div>
 
-                <Badge className={`${getRoleBadgeColor(member.role)} text-white`}>
+                <Badge
+                  className={`${getRoleBadgeColor(member.role)} text-white`}
+                >
                   {member.role}
                 </Badge>
               </CardContent>
@@ -292,7 +318,9 @@ export default function TeamDashboard() {
             <Card>
               <CardContent className="p-12 text-center">
                 <Users className="h-16 w-16 mx-auto text-muted-foreground opacity-50 mb-4" />
-                <p className="text-lg font-semibold text-muted-foreground">No team members yet</p>
+                <p className="text-lg font-semibold text-muted-foreground">
+                  No team members yet
+                </p>
                 <p className="text-sm text-muted-foreground mt-2">
                   Click "Invite Member" to add your first team member!
                 </p>
@@ -302,6 +330,5 @@ export default function TeamDashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

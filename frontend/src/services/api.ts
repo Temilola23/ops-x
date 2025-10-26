@@ -22,7 +22,7 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+      baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8432",
       timeout: 30000,
       headers: {
         "Content-Type": "application/json",
@@ -202,7 +202,7 @@ class ApiClient {
 
   // GitHub Integration
   async saveToGitHub(payload: {
-    project_id: string;
+    project_id: number;
     project_name: string;
     files: Array<{ name: string; content: string }>;
     v0_chat_id?: string;

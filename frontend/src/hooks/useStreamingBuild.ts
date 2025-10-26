@@ -12,7 +12,7 @@ interface BuildStatus {
   repo_url?: string;
   app_url?: string;
   error?: string;
-  accumulated?: string;  // For V0 streaming content
+  accumulated?: string; // For V0 streaming content
 }
 
 export function useStreamingBuild() {
@@ -32,7 +32,9 @@ export function useStreamingBuild() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/mcp/app/build/v0/stream`,
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8432"
+        }/mcp/app/build/v0/stream`,
         {
           method: "POST",
           headers: {

@@ -11,7 +11,7 @@ class WebSocketService {
     }
 
     const wsUrl =
-      url || process.env.NEXT_PUBLIC_WS_URL || "http://localhost:8000";
+      url || process.env.NEXT_PUBLIC_WS_URL || "http://localhost:8432";
 
     this.socket = io(wsUrl, {
       transports: ["websocket"],
