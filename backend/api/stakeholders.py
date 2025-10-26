@@ -50,17 +50,25 @@ async def add_stakeholder(
             "error": "Project not found"
         }
     
+    # Check if user exists with this email (auto-link)
+    user = db.query(User).filter(User.email == request.email).first()
+    user_id = user.id if user else None
+    
     # Create stakeholder
     stakeholder = Stakeholder(
         project_id=project_id,
+        user_id=user_id,  # Link to user if exists
         name=request.name,
         email=request.email,
-        role=request.role
+        role=request.role,
+        status="active" if user_id else "pending"  # Active if linked, pending if not
     )
     
     db.add(stakeholder)
     db.commit()
     db.refresh(stakeholder)
+    
+    print(f"✅ Created stakeholder for {request.email} (user_id: {user_id}, status: {stakeholder.status})")
     
     return {
         "success": True,
@@ -70,6 +78,7 @@ async def add_stakeholder(
             "name": stakeholder.name,
             "email": stakeholder.email,
             "role": stakeholder.role,
+            "status": stakeholder.status,
             "github_branch": stakeholder.github_branch,
             "created_at": stakeholder.created_at.isoformat()
         },

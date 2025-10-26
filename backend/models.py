@@ -58,6 +58,11 @@ class Project(Base):
     app_url = Column(String(512))  # Deployed app URL (Vercel, etc.)
     status = Column(String(50), default="pending")  # pending, building, built, failed
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # v0 Integration fields
+    v0_chat_id = Column(String(255), index=True)  # v0 chat ID for refinements
+    v0_preview_url = Column(String(512))  # v0 live preview URL
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

@@ -196,6 +196,82 @@ async def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/auth/clerk-user")
+async def ensure_clerk_user(
+    clerk_user_id: str,
+    email: str,
+    name: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Ensure a User record exists for a Clerk user
+    This is called by frontend to ensure database sync
+    
+    Flow:
+    1. Check if user exists with clerk_user_id
+    2. If not, check by email
+    3. If not, create new user
+    4. Return user info
+    """
+    try:
+        # Check by Clerk ID
+        user = db.query(User).filter(User.clerk_user_id == clerk_user_id).first()
+        
+        if user:
+            # User exists, update email/name if provided
+            if email and user.email != email:
+                user.email = email
+            if name and user.name != name:
+                user.name = name
+            db.commit()
+            db.refresh(user)
+            print(f"✅ Found existing Clerk user: {user.email}")
+        else:
+            # Check by email (might be anonymous user)
+            user = db.query(User).filter(User.email == email).first()
+            if user:
+                # Link anonymous user to Clerk
+                user.clerk_user_id = clerk_user_id
+                if name:
+                    user.name = name
+                db.commit()
+                db.refresh(user)
+                print(f"✅ Linked Clerk ID to existing user: {user.email}")
+            else:
+                # Create new user
+                user = User(
+                    clerk_user_id=clerk_user_id,
+                    email=email,
+                    name=name
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+                print(f"✅ Created new Clerk user: {user.email}")
+        
+        return {
+            "success": True,
+            "data": {
+                "user_id": user.id,
+                "clerk_user_id": user.clerk_user_id,
+                "email": user.email,
+                "name": user.name
+            },
+            "error": None
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Ensure Clerk user error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "success": False,
+            "error": str(e),
+            "data": None
+        }
+
+
 @router.get("/auth/me")
 async def get_current_user(session_token: str, db: Session = Depends(get_db)):
     """

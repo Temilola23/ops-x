@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+import socketio
 
 # CRITICAL: Load environment variables BEFORE importing any modules
 # that need API keys (gemini, github, etc.)
@@ -40,7 +41,7 @@ from mcp import (
 )
 
 # Import REST API endpoints
-from api import projects, stakeholders, branches, auth, invites, refinements, permissions
+from api import projects, stakeholders, branches, auth, invites, refinements, permissions, chat
 
 
 @asynccontextmanager
@@ -92,6 +93,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Create Socket.IO server for real-time chat
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins=["http://localhost:3000", "http://localhost:5173"],
+    logger=True,
+    engineio_logger=True
+)
+
+# Wrap with ASGI app
+socket_app = socketio.ASGIApp(sio, app)
+
 
 # Register REST API endpoints
 app.include_router(auth.router, prefix="/api", tags=["Authentication API"])
@@ -100,6 +112,7 @@ app.include_router(stakeholders.router, prefix="/api", tags=["Stakeholders API"]
 app.include_router(branches.router, prefix="/api", tags=["Branches API"])
 app.include_router(invites.router, prefix="/api", tags=["Invites API"])
 app.include_router(refinements.router, prefix="/api", tags=["Refinements API"])
+app.include_router(chat.router, prefix="/api", tags=["Chat API"])
 
 # Register MCP endpoints
 # V0 build endpoints DISABLED - frontend handles V0 with TypeScript SDK
@@ -130,12 +143,38 @@ async def health_check():
     return {"status": "healthy"}
 
 
+# Socket.IO event handlers
+@sio.event
+async def connect(sid, environ):
+    """Handle client connection"""
+    print(f"🔌 Client connected: {sid}")
+
+@sio.event
+async def disconnect(sid):
+    """Handle client disconnection"""
+    print(f"🔌 Client disconnected: {sid}")
+
+@sio.event
+async def join_room(sid, data):
+    """Join a project chat room"""
+    room_id = data.get('room_id')
+    await sio.enter_room(sid, room_id)
+    print(f"👥 Client {sid} joined room {room_id}")
+
+@sio.event
+async def leave_room(sid, data):
+    """Leave a project chat room"""
+    room_id = data.get('room_id')
+    await sio.leave_room(sid, room_id)
+    print(f"👋 Client {sid} left room {room_id}")
+
+
 if __name__ == "__main__":
     import uvicorn
     
     port = int(os.getenv("BACKEND_PORT", 8000))
     uvicorn.run(
-        "main:app",
+        "main:socket_app",  # Use socket_app instead of app
         host="0.0.0.0",
         port=port,
         reload=True,

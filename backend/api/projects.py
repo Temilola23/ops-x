@@ -153,6 +153,8 @@ async def get_project(project_id: int, db: Session = Depends(get_db)):
             "status": project.status,
             "github_repo": project.github_repo,
             "app_url": project.app_url,
+            "v0_chat_id": project.v0_chat_id,
+            "v0_preview_url": project.v0_preview_url,
             "owner_id": project.owner_id,
             "created_at": project.created_at.isoformat(),
             "updated_at": project.updated_at.isoformat() if project.updated_at else None
@@ -175,7 +177,7 @@ async def update_project(project_id: int, updates: dict, db: Session = Depends(g
         }
     
     # Update allowed fields
-    allowed_fields = ["status", "github_repo", "app_url", "name"]
+    allowed_fields = ["status", "github_repo", "app_url", "name", "v0_chat_id", "v0_preview_url"]
     for field, value in updates.items():
         if field in allowed_fields and hasattr(project, field):
             setattr(project, field, value)
@@ -379,9 +381,11 @@ This project was created using the One-Prompt Startup Platform.
         
         print(f"Pushed {len(files_dict)} files successfully")
         
-        # 5. Update project in database
+        # 5. Update project in database with v0 metadata
         project.github_repo = repo_url
         project.status = "built"
+        project.v0_chat_id = request.v0_chat_id  # Save v0 chat ID for refinements
+        project.v0_preview_url = request.v0_preview_url  # Save v0 preview URL
         project.updated_at = datetime.now(timezone.utc)
         
         db.commit()
