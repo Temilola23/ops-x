@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
 
 from database import get_db
-from models import Project, User
+from models import Project, User, Stakeholder, Branch
 from integrations.chroma_client import chroma_search, generate_embedding
 from integrations.github_api import github_client
 
@@ -603,3 +603,246 @@ async def semantic_search(
         },
         "error": None
     }
+
+
+@router.get("/projects/{project_id}/code/latest")
+async def get_latest_code(
+    project_id: int,
+    stakeholder_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch latest code from GitHub for refinement
+    
+    Returns:
+        All files from the GitHub repo, filtered by role permissions if stakeholder_id provided
+    """
+    try:
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            return {
+                "success": False,
+                "error": "Project not found",
+                "data": None
+            }
+        
+        if not project.github_repo:
+            return {
+                "success": False,
+                "error": "Project not yet pushed to GitHub",
+                "data": None
+            }
+        
+        # Extract repo full name from GitHub URL
+        repo_url = project.github_repo
+        if "github.com/" in repo_url:
+            repo_full_name = repo_url.split("github.com/")[1].replace(".git", "").strip("/")
+        else:
+            repo_full_name = repo_url
+        
+        print(f"Extracting repo: {repo_full_name} from {repo_url}")
+        
+        # Fetch all files from GitHub
+        default_branch = getattr(project, 'default_branch', None) or "main"
+        files = await github_client.fetch_repo_files(repo_full_name, default_branch)
+        
+        # If stakeholder_id provided, filter by permissions
+        if stakeholder_id:
+            from api.permissions import get_allowed_files
+            
+            stakeholder = db.query(Stakeholder).filter(Stakeholder.id == stakeholder_id).first()
+            if stakeholder:
+                all_file_paths = list(files.keys())
+                allowed_paths = get_allowed_files(stakeholder.role, all_file_paths)
+                files = {path: content for path, content in files.items() if path in allowed_paths}
+        
+        return {
+            "success": True,
+            "data": {
+                "files": files,
+                "total_files": len(files),
+                "github_repo": project.github_repo,
+                "branch": default_branch
+            },
+            "error": None
+        }
+        
+    except Exception as e:
+        print(f"Get latest code error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "success": False,
+            "error": "Failed to fetch code from GitHub",
+            "data": None
+        }
+
+
+@router.post("/projects/{project_id}/create-branch-and-pr")
+async def create_branch_and_pr(
+    project_id: int,
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new branch with changes and open a PR
+    
+    Request body:
+    {
+        "stakeholder_id": int,
+        "branch_name": str (optional, auto-generated if not provided),
+        "files": {"path": "content", ...},
+        "pr_title": str,
+        "pr_description": str
+    }
+    """
+    try:
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            return {"success": False, "error": "Project not found", "data": None}
+        
+        if not project.github_repo:
+            return {"success": False, "error": "Project not on GitHub yet", "data": None}
+        
+        # Get stakeholder
+        stakeholder_id = request.get("stakeholder_id")
+        stakeholder = db.query(Stakeholder).filter(Stakeholder.id == stakeholder_id).first()
+        
+        # Generate branch name if not provided
+        branch_name = request.get("branch_name")
+        if not branch_name:
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            role_prefix = stakeholder.role.lower().replace(" ", "-") if stakeholder else "update"
+            branch_name = f"{role_prefix}-refinement-{timestamp}"
+        
+        # Extract repo full name
+        repo_full_name = project.github_repo.replace("https://github.com/", "").replace(".git", "").strip("/")
+        
+        # 1. Create branch
+        print(f"Creating branch: {branch_name}")
+        branch_result = await github_client.create_branch(
+            repo_full_name=repo_full_name,
+            branch_name=branch_name,
+            base_branch=getattr(project, 'default_branch', None) or "main"
+        )
+        
+        if not branch_result.get("success"):
+            return {"success": False, "error": f"Failed to create branch: {branch_result.get('error')}", "data": None}
+        
+        # 2. Push files to new branch
+        files_to_push = request.get("files", {})
+        print(f"Pushing {len(files_to_push)} files to branch {branch_name}")
+        
+        push_result = await github_client.push_multiple_files(
+            repo_full_name=repo_full_name,
+            files=files_to_push,
+            commit_message=f"Refinement: {request.get('pr_title', 'Update code')}",
+            branch=branch_name
+        )
+        
+        if not push_result.get("success"):
+            return {"success": False, "error": "Failed to push files", "data": None}
+        
+        # 3. Create Pull Request
+        pr_title = request.get("pr_title", f"Refinement by {stakeholder.name if stakeholder else 'Team Member'}")
+        pr_body = request.get("pr_description", "Code refinement requested through OPS-X platform")
+        
+        pr_result = await github_client.create_pull_request(
+            repo_full_name=repo_full_name,
+            title=pr_title,
+            body=pr_body,
+            head_branch=branch_name,
+            base_branch=getattr(project, 'default_branch', None) or "main"
+        )
+        
+        if not pr_result.get("success"):
+            return {"success": False, "error": f"Failed to create PR: {pr_result.get('error')}", "data": None}
+        
+        # 4. Store branch in database
+        branch_record = Branch(
+            project_id=project_id,
+            stakeholder_id=stakeholder_id,
+            branch_name=branch_name,
+            github_url=pr_result.get("pr_url"),
+            status="active"
+        )
+        db.add(branch_record)
+        db.commit()
+        db.refresh(branch_record)
+        
+        return {
+            "success": True,
+            "data": {
+                "branch_name": branch_name,
+                "pr_url": pr_result.get("pr_url"),
+                "pr_number": pr_result.get("pr_number"),
+                "message": "Branch created and PR opened successfully!"
+            },
+            "error": None
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Create branch and PR error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": "Failed to create branch and PR", "data": None}
+
+
+@router.post("/projects/{project_id}/push-to-main")
+async def push_to_main(
+    project_id: int,
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Push changes directly to main branch (for anonymous users or quick updates)
+    
+    Request body:
+    {
+        "files": {"path": "content", ...},
+        "commit_message": str
+    }
+    """
+    try:
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            return {"success": False, "error": "Project not found", "data": None}
+        
+        if not project.github_repo:
+            return {"success": False, "error": "Project not on GitHub yet", "data": None}
+        
+        # Extract repo full name
+        repo_full_name = project.github_repo.replace("https://github.com/", "").replace(".git", "").strip("/")
+        
+        # Push files to main branch
+        files_to_push = request.get("files", {})
+        commit_message = request.get("commit_message", "Update via OPS-X")
+        
+        print(f"Pushing {len(files_to_push)} files to main branch")
+        
+        push_result = await github_client.push_multiple_files(
+            repo_full_name=repo_full_name,
+            files=files_to_push,
+            commit_message=commit_message,
+            branch=getattr(project, 'default_branch', None) or "main"
+        )
+        
+        if push_result.get("success"):
+            return {
+                "success": True,
+                "data": {
+                    "github_repo": project.github_repo,
+                    "message": "Changes pushed to main branch successfully!"
+                },
+                "error": None
+            }
+        else:
+            return {"success": False, "error": "Failed to push to main", "data": None}
+            
+    except Exception as e:
+        print(f"Push to main error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": "Failed to push to main", "data": None}

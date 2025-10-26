@@ -142,6 +142,29 @@ class CodeEmbedding(Base):
     # Note: Actual embeddings stored in Chroma, this is just metadata
 
 
+class Refinement(Base):
+    """MVP refinements requested by team members"""
+    __tablename__ = "refinements"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    stakeholder_id = Column(Integer, ForeignKey("stakeholders.id"), nullable=False)
+    request_text = Column(Text, nullable=False)
+    ai_model_preference = Column(String(50))  # "v0", "claude", "gemini", "auto"
+    ai_model_used = Column(String(50))  # Actual model that processed it
+    files_changed = Column(JSON)  # List of files modified
+    pr_url = Column(String(500))  # GitHub PR URL
+    coderabbit_score = Column(Integer)  # 1-10 severity score
+    status = Column(String(20), default="pending")  # pending, processing, completed, failed, re-refining
+    error_message = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True))
+    
+    # Relationships
+    project = relationship("Project")
+    stakeholder = relationship("Stakeholder")
+
+
 # Index for faster queries
 from sqlalchemy import Index
 
