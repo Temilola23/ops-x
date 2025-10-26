@@ -169,7 +169,12 @@ Requirements:
 
       if (response.success && response.data) {
         setRepoUrl(response.data.repo_url);
-        toast.success("Code pushed to GitHub! 🎉");
+        toast.success("Code pushed to GitHub!");
+        
+        // Redirect to team management page
+        setTimeout(() => {
+          router.push(`/team/${backendProjectId}`);
+        }, 1500);
       } else {
         toast.error(response.error || "Failed to push to GitHub");
       }
