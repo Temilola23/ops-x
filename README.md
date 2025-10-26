@@ -2,31 +2,6 @@
 
 *A comprehensive plan for Cal Hacks 12.0*
 
-> ### RAW IDEA FROM YOU (exact text)
->
-> Okay, so this is the big idea!
->
-> I was thinking, what if we did our OPS-X as a multi-user platform? So, this is the thing, right? I was thinking what if we started out as a single creao one prompt thing! Then after that, we kinda provision it and then make the demo that os made accessible on a sorta centralized platform. Then the one who made the demo can now add stakeholders to the project. Now, say for the sake of a scenario we had a frontend engineer and a backend engineer working on this vibe coded project, we want it so the same mvp is available to all the stakeholders and then they can make more specialized requests based on each one of their expert areas  So, for example, if it's a web app, the backend guy can focus on the backend and like probe for ultra specific implemwentations.  Like for example, he might want a particular database instead of another one for some CAP reason or might want to use a particular auth methodology instead of another for some other reason and then he can keep probing the agent to make changes to the codebase based on those! Now, there arises a question: if this is happening simultaneously across different stakeholders, how do we track who made what change, what if a change is a breaking change, and what if there is some conflict? Like some systems diesnt agree with some other system, etc.?? Now, to solve that to an extent, I am thinking we could have like a Version control system (VCS). Now this VCS would kinda mean that when a stakeholder wants to start improving on their part of the product, they would have to like branch off of the main prompt platform, iterate and do their shtuf, and then they can make and merge PRs. And that goes the same for every other stakeholder.
-> Also, for each of the stakeholder parts of things, we can use fetch.ai's specialized agents (maybe even consider building our own agents for it so it's like we have specialized agents that will attend only to the backend or frontend, etc)
-> Now, for the ideation piece of the puzzle and conflict corrections too, we can have a centralized agent that kinda has context across different branches of the VCS and one can just message that agent to ask questions, double check that the current trajectory of our implementation is non-conflicting, etc.
-> And also, there can be a chat room where all the stakeholders can meet and ask questions and ideate and stuff but then in this part of the room our central agent (Janitor AI's) will be there, be able to answer the different questions and then we have to figure out when it will speak, what context it willk refer to, etc! So, we could store context across all chats smartly in our DB (chroma DB), to stay within the 25K context limit, we can use what cursor does that we summarize when we are close to the context window, etc!
->
-> And then normally, we have to make it so the different specific agents is able to communicate with our janitor ai agent like their context and allat so janitor ai is up to dte  So it has to intelligently choose what to or not to share and all given the context limit.
-> And then we should beb able to backpropagate the contents of the chat back to the specific ai agents based on what is relevant to them so that implementation would be faster going forward.
->
-> Then from the main codebase, we can always use some other AI agent to get index the full codebase and then from the full codebase, we can get a transcript to pitch and then from the transcript, use deepgram to get TTS and then we can hook up sora or some video/image generation platform to get slides off of it.
->
-> Now, im thinking of how we can even use MCPs to integrate something and allat.
->
-> Then we can also use postman for workflows, etc.
->
-> Then we also have to figure out how to like deploy our agents to the specific agentverse, and all the other track specific prizes, etc!
->
-> I dont know, this just has to work and it has to be crazy and cool.
->
-> ETC!
-
----
 
 ## 1) Event context and prize targets
 
