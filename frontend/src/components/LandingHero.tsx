@@ -9,13 +9,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, Loader2, Zap, GitBranch, Users, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { SignInButton, SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 
 export function LandingHero() {
   const router = useRouter();
+  const { user, isLoaded } = useUser();
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [isBuilding, setIsBuilding] = useState(false);
+
+  // Clean up session storage flags on mount
+  useEffect(() => {
+    if (isLoaded) {
+      sessionStorage.removeItem('opsx_from_scaffold');
+      sessionStorage.removeItem('opsx_allow_create');
+    }
+  }, [isLoaded]);
 
   const handleGenerate = async () => {
     if (!projectName.trim() || !description.trim()) {
@@ -57,6 +66,13 @@ export function LandingHero() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => router.push('/workspace')}
+              >
+                My Workspace
+              </Button>
               <UserButton afterSignOutUrl="/" />
             </SignedIn>
           </div>

@@ -168,61 +168,51 @@ class GitHubAPIClient:
         self,
         repo_full_name: str,
         branch_name: str,
-        base_sha: str
+        base_branch: str = "main"
     ) -> Dict:
-        """Create a new branch"""
+        """
+        Create a new branch from a base branch
         
+        Args:
+            repo_full_name: Repository in format "username/repo-name"
+            branch_name: Name for the new branch
+            base_branch: Branch to create from (default: main)
+        """
         async with httpx.AsyncClient() as client:
+            # First, get the SHA of the base branch
+            ref_response = await client.get(
+                f"{self.base_url}/repos/{repo_full_name}/git/ref/heads/{base_branch}",
+                headers=self.headers,
+                timeout=10.0
+            )
+            
+            if ref_response.status_code != 200:
+                return {
+                    "success": False,
+                    "error": f"Base branch '{base_branch}' not found"
+                }
+            
+            base_sha = ref_response.json()["object"]["sha"]
+            print(f"Base branch '{base_branch}' SHA: {base_sha}")
+            
+            # Create new branch
             response = await client.post(
                 f"{self.base_url}/repos/{repo_full_name}/git/refs",
                 headers=self.headers,
                 json={
                     "ref": f"refs/heads/{branch_name}",
                     "sha": base_sha
-                }
+                },
+                timeout=10.0
             )
             
             if response.status_code == 201:
-                return {"success": True}
+                print(f"✓ Created branch: {branch_name}")
+                return {"success": True, "branch_name": branch_name}
             else:
                 return {
                     "success": False,
                     "error": f"Failed to create branch: {response.text}"
-                }
-    
-    async def create_pull_request(
-        self,
-        repo_full_name: str,
-        title: str,
-        head: str,
-        base: str,
-        body: str = ""
-    ) -> Dict:
-        """Create a pull request"""
-        
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.base_url}/repos/{repo_full_name}/pulls",
-                headers=self.headers,
-                json={
-                    "title": title,
-                    "head": head,
-                    "base": base,
-                    "body": body
-                }
-            )
-            
-            if response.status_code == 201:
-                pr_data = response.json()
-                return {
-                    "success": True,
-                    "pr_url": pr_data["html_url"],
-                    "pr_number": pr_data["number"]
-                }
-            else:
-                return {
-                    "success": False,
-                    "error": f"Failed to create PR: {response.text}"
                 }
     
     async def push_multiple_files(
@@ -281,6 +271,152 @@ class GitHubAPIClient:
             "results": results,
             "failed_files": failed_files
         }
+    
+    async def fetch_repo_files(
+        self,
+        repo_full_name: str,
+        branch: str = "main"
+    ) -> Dict[str, str]:
+        """
+        Fetch all files from a GitHub repository
+        
+        Args:
+            repo_full_name: Repository in format "username/repo-name"  
+            branch: Branch to fetch from (default: main)
+        
+        Returns:
+            Dict of {file_path: file_content}
+        """
+        files = {}
+        
+        print(f"Fetching files from {repo_full_name} (branch: {branch})")
+        
+        async with httpx.AsyncClient() as client:
+            # Step 1: Get repo info to find default branch
+            repo_response = await client.get(
+                f"{self.base_url}/repos/{repo_full_name}",
+                headers=self.headers,
+                timeout=10.0
+            )
+            
+            if repo_response.status_code != 200:
+                print(f"❌ Repo not found: {repo_response.status_code}")
+                print(f"   Repo: {repo_full_name}")
+                return files
+            
+            repo_data = repo_response.json()
+            actual_branch = repo_data.get("default_branch", branch)
+            print(f"✓ Repo found. Default branch: {actual_branch}")
+            
+            # Step 2: Recursively fetch directory contents
+            async def fetch_directory(path: str = ""):
+                try:
+                    url = f"{self.base_url}/repos/{repo_full_name}/contents/{path}?ref={actual_branch}"
+                    print(f"Fetching: {url}")
+                    
+                    contents_response = await client.get(
+                        url,
+                        headers=self.headers,
+                        timeout=15.0
+                    )
+                    
+                    if contents_response.status_code != 200:
+                        print(f"Failed to fetch '{path}': {contents_response.status_code}")
+                        return
+                    
+                    items = contents_response.json()
+                    if not isinstance(items, list):
+                        items = [items]
+                    
+                    print(f"Found {len(items)} items in '{path or 'root'}'")
+                    
+                    for item in items:
+                        if item["type"] == "file":
+                            # Skip binary files
+                            if any(item["name"].endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.svg']):
+                                continue
+                            
+                            # Fetch file content individually (GitHub doesn't include content in directory listings)
+                            try:
+                                file_response = await client.get(
+                                    f"{self.base_url}/repos/{repo_full_name}/contents/{item['path']}?ref={actual_branch}",
+                                    headers=self.headers,
+                                    timeout=10.0
+                                )
+                                
+                                if file_response.status_code == 200:
+                                    file_data = file_response.json()
+                                    import base64
+                                    content = base64.b64decode(file_data["content"]).decode('utf-8')
+                                    files[item["path"]] = content
+                                    print(f"  ✓ {item['path']}")
+                                else:
+                                    print(f"  ✗ {item['path']}: HTTP {file_response.status_code}")
+                            except Exception as e:
+                                print(f"  ✗ {item['path']}: {str(e)}")
+                        
+                        elif item["type"] == "dir":
+                            # Recursively fetch directory
+                            print(f"  Entering directory: {item['path']}")
+                            await fetch_directory(item["path"])
+                
+                except Exception as e:
+                    print(f"❌ Error fetching directory '{path}': {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+            
+            # Start fetching from root
+            await fetch_directory("")
+            
+            print(f"✓ Fetched {len(files)} files from {repo_full_name}")
+            return files
+    
+    async def create_pull_request(
+        self,
+        repo_full_name: str,
+        title: str,
+        body: str,
+        head_branch: str,
+        base_branch: str = "main"
+    ) -> Dict:
+        """
+        Create a pull request
+        
+        Args:
+            repo_full_name: Repository in format "username/repo-name"
+            title: PR title
+            body: PR description
+            head_branch: Branch with changes
+            base_branch: Target branch (default: main)
+        
+        Returns:
+            {"success": bool, "pr_url": str, "pr_number": int}
+        """
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/repos/{repo_full_name}/pulls",
+                headers=self.headers,
+                json={
+                    "title": title,
+                    "body": body,
+                    "head": head_branch,
+                    "base": base_branch
+                },
+                timeout=15.0
+            )
+            
+            if response.status_code == 201:
+                pr_data = response.json()
+                return {
+                    "success": True,
+                    "pr_url": pr_data["html_url"],
+                    "pr_number": pr_data["number"]
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Failed to create PR: {response.text}"
+                }
 
 
 # Singleton instance

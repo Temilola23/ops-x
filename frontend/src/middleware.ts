@@ -1,14 +1,17 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
 const isProtectedRoute = createRouteMatcher([
+  '/workspace(.*)',
   '/team(.*)',
+  '/refine(.*)',
+  '/profile(.*)',
   '/dashboard(.*)',
 ])
 
 const isPublicRoute = createRouteMatcher([
   '/',
   '/scaffold',
-  '/join(.*)', // Make /join and all its children public
+  '/join(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {
@@ -17,7 +20,7 @@ export default clerkMiddleware(async (auth, req) => {
     return
   }
   
-  // Protect other routes
+  // Protect workspace and project routes
   if (isProtectedRoute(req)) {
     await auth.protect()
   }

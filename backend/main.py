@@ -40,7 +40,7 @@ from mcp import (
 )
 
 # Import REST API endpoints
-from api import projects, stakeholders, branches, auth, invites
+from api import projects, stakeholders, branches, auth, invites, refinements, permissions
 
 
 @asynccontextmanager
@@ -99,6 +99,7 @@ app.include_router(projects.router, prefix="/api", tags=["Projects API"])
 app.include_router(stakeholders.router, prefix="/api", tags=["Stakeholders API"])
 app.include_router(branches.router, prefix="/api", tags=["Branches API"])
 app.include_router(invites.router, prefix="/api", tags=["Invites API"])
+app.include_router(refinements.router, prefix="/api", tags=["Refinements API"])
 
 # Register MCP endpoints
 # V0 build endpoints DISABLED - frontend handles V0 with TypeScript SDK

@@ -67,6 +67,9 @@ export default function ScaffoldPage() {
 
     setProjectName(name);
     setProjectDescription(desc);
+    
+    // Mark that user came from scaffold
+    sessionStorage.setItem('opsx_from_scaffold', 'true');
 
     // Auto-start build
     startBuild(name, desc);
@@ -167,15 +170,15 @@ Requirements:
         description: `Generated with v0.dev - ${projectName}`,
       });
 
-      if (response.success && response.data) {
-        setRepoUrl(response.data.repo_url);
-        toast.success("Code pushed to GitHub!");
-        
-        // Redirect to team management page
-        setTimeout(() => {
-          router.push(`/team/${backendProjectId}`);
-        }, 1500);
-      } else {
+        if (response.success && response.data) {
+          setRepoUrl(response.data.repo_url);
+          toast.success("MVP Created! Opening refinement workspace...");
+          
+          // Redirect to refine page
+          setTimeout(() => {
+            router.push(`/refine/${backendProjectId}`);
+          }, 1500);
+        } else {
         toast.error(response.error || "Failed to push to GitHub");
       }
     } catch (error) {
