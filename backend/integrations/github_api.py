@@ -417,6 +417,78 @@ class GitHubAPIClient:
                     "success": False,
                     "error": f"Failed to create PR: {response.text}"
                 }
+    
+    async def push_coderabbit_config(self, repo_full_name: str, branch: str = "main") -> Dict:
+        """
+        Push .coderabbit.yaml configuration to repository for automated PR reviews.
+        """
+        import os
+        config_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "deployment",
+            "coderabbit.yaml"
+        )
+        
+        try:
+            with open(config_path, "r") as f:
+                config_content = f.read()
+            
+            result = await self.create_or_update_file(
+                repo_full_name=repo_full_name,
+                file_path=".coderabbit.yaml",
+                content=config_content,
+                message="Add CodeRabbit configuration for automated PR reviews",
+                branch=branch
+            )
+            
+            if result.get("success"):
+                print(f"✓ Pushed .coderabbit.yaml to {repo_full_name}")
+            else:
+                print(f"✗ Failed to push .coderabbit.yaml: {result.get('error')}")
+            
+            return result
+        except FileNotFoundError:
+            print(f"✗ CodeRabbit config not found at {config_path}")
+            return {"success": False, "error": "Config file not found"}
+        except Exception as e:
+            print(f"✗ Error pushing CodeRabbit config: {str(e)}")
+            return {"success": False, "error": str(e)}
+    
+    async def push_github_workflows(self, repo_full_name: str, branch: str = "main") -> Dict:
+        """
+        Push GitHub Actions workflows for auto-merge and other automation.
+        """
+        import os
+        workflow_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "deployment",
+            "github-auto-merge.yml"
+        )
+        
+        try:
+            with open(workflow_path, "r") as f:
+                workflow_content = f.read()
+            
+            result = await self.create_or_update_file(
+                repo_full_name=repo_full_name,
+                file_path=".github/workflows/auto-merge.yml",
+                content=workflow_content,
+                message="Add auto-merge workflow for approved PRs",
+                branch=branch
+            )
+            
+            if result.get("success"):
+                print(f"✓ Pushed auto-merge workflow to {repo_full_name}")
+            else:
+                print(f"✗ Failed to push auto-merge workflow: {result.get('error')}")
+            
+            return result
+        except FileNotFoundError:
+            print(f"✗ Auto-merge workflow not found at {workflow_path}")
+            return {"success": False, "error": "Workflow file not found"}
+        except Exception as e:
+            print(f"✗ Error pushing auto-merge workflow: {str(e)}")
+            return {"success": False, "error": str(e)}
 
 
 # Singleton instance

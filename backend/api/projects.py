@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
 
 from database import get_db
-from models import Project, User, Stakeholder, Branch
+from models import Project, User, Stakeholder, Branch, Refinement
 from integrations.chroma_client import chroma_search, generate_embedding
 from integrations.github_api import github_client
 
@@ -377,9 +377,29 @@ This project was created using the One-Prompt Startup Platform.
                 }
             }
         
+        # 5. Push CodeRabbit configuration for automated PR reviews
+        print("Adding CodeRabbit configuration...")
+        coderabbit_result = await github_client.push_coderabbit_config(
+            repo_full_name=repo_full_name,
+            branch=default_branch
+        )
+        if not coderabbit_result.get("success"):
+            print(f"Warning: Failed to push CodeRabbit config: {coderabbit_result.get('error')}")
+            # Don't fail the whole operation if CodeRabbit config fails
+        
+        # 6. Push GitHub Actions workflow for auto-merge
+        print("Adding auto-merge workflow...")
+        workflow_result = await github_client.push_github_workflows(
+            repo_full_name=repo_full_name,
+            branch=default_branch
+        )
+        if not workflow_result.get("success"):
+            print(f"Warning: Failed to push auto-merge workflow: {workflow_result.get('error')}")
+            # Don't fail the whole operation if workflow fails
+        
         print(f"Pushed {len(files_dict)} files successfully")
         
-        # 5. Update project in database
+        # 7. Update project in database
         project.github_repo = repo_url
         project.status = "built"
         project.updated_at = datetime.now(timezone.utc)
@@ -770,6 +790,19 @@ async def create_branch_and_pr(
         db.add(branch_record)
         db.commit()
         db.refresh(branch_record)
+        
+        # 5. Update refinement with PR URL (if refinement exists)
+        latest_refinement = db.query(Refinement).filter(
+            Refinement.project_id == project_id,
+            Refinement.stakeholder_id == stakeholder_id,
+            Refinement.status == "pending"
+        ).order_by(Refinement.created_at.desc()).first()
+        
+        if latest_refinement:
+            latest_refinement.pr_url = pr_result.get("pr_url")
+            latest_refinement.status = "processing"
+            db.commit()
+            print(f"✓ Linked PR to refinement #{latest_refinement.id}")
         
         return {
             "success": True,
