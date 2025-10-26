@@ -380,17 +380,19 @@ class GitHubAPIClient:
         base_branch: str = "main"
     ) -> Dict:
         """
-        Create a pull request
+        Create a pull request on the specified repository.
         
-        Args:
-            repo_full_name: Repository in format "username/repo-name"
-            title: PR title
-            body: PR description
-            head_branch: Branch with changes
-            base_branch: Target branch (default: main)
+        Parameters:
+            repo_full_name (str): Repository in the format "owner/repo".
+            title (str): Pull request title.
+            body (str): Pull request description/body.
+            head_branch (str): Name of the branch containing the changes.
+            base_branch (str): Target branch to merge into (default: "main").
         
         Returns:
-            {"success": bool, "pr_url": str, "pr_number": int}
+            dict: Result dictionary. `success` is `True` if the PR was created, `False` otherwise.
+                On success includes `pr_url` (str) and `pr_number` (int).
+                On failure includes `error` (str) with the API response text.
         """
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -420,7 +422,16 @@ class GitHubAPIClient:
     
     async def push_coderabbit_config(self, repo_full_name: str, branch: str = "main") -> Dict:
         """
-        Push .coderabbit.yaml configuration to repository for automated PR reviews.
+        Pushes the local CodeRabbit configuration file into the repository at `.coderabbit.yaml`.
+        
+        Reads the local deployment/coderabbit.yaml file and creates or updates `.coderabbit.yaml` on the specified branch of the target repository using the content API. Prints a brief success or error message.
+        
+        Parameters:
+            repo_full_name (str): Repository identifier in "owner/name" format.
+            branch (str): Target branch to push the configuration to (default "main").
+        
+        Returns:
+            dict: Result object with a `success` boolean. On success may include `commit_sha` (or other metadata returned by the content API). On failure includes an `error` string; if the local config is missing the `error` will be "Config file not found".
         """
         import os
         config_path = os.path.join(
@@ -456,7 +467,16 @@ class GitHubAPIClient:
     
     async def push_github_workflows(self, repo_full_name: str, branch: str = "main") -> Dict:
         """
-        Push GitHub Actions workflows for auto-merge and other automation.
+        Pushes a local GitHub Actions workflow file into the target repository.
+        
+        Reads the local deployment/github-auto-merge.yml file and creates or updates .github/workflows/auto-merge.yml on the specified branch of the given repository.
+        
+        Parameters:
+        	repo_full_name (str): Full repository name in the form "owner/repo".
+        	branch (str): Target branch to push the workflow to (defaults to "main").
+        
+        Returns:
+        	result (dict): Result dictionary from the file operation. On success contains {"success": True, "commit_sha": ...}; on failure contains {"success": False, "error": "<message>"}.
         """
         import os
         workflow_path = os.path.join(

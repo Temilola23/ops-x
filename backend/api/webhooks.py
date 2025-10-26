@@ -41,18 +41,24 @@ async def github_webhook(
     db: Session = Depends(get_db)
 ):
     """
-    Receives GitHub webhooks to track PR lifecycle events.
+    Handle incoming GitHub webhook events and update PR-related refinement state.
     
-    Useful for:
-    - Updating refinement status when PRs are opened/closed/merged
-    - Tracking when CodeRabbit posts review comments
-    - Syncing PR state with our database
+    Processes "pull_request", "issue_comment", and "pull_request_review" events from GitHub. For pull_request events, updates the corresponding Refinement record (by PR URL) to reflect opened, closed+merged (completed), or closed-not-merged (failed) states and commits those changes to the database. For issue_comment and pull_request_review events, detects CodeRabbit-originated activity and logs a preview.
     
-    To set up:
-    1. Go to GitHub repo → Settings → Webhooks
-    2. Add webhook URL: https://your-backend.com/api/webhooks/github
-    3. Select events: Pull requests, Pull request reviews, Issue comments
-    4. Set secret: GITHUB_WEBHOOK_SECRET from .env
+    Parameters:
+        request (Request): The incoming FastAPI request containing the webhook JSON payload.
+        x_github_event (Optional[str]): The GitHub event type from the `X-GitHub-Event` header (e.g., "pull_request", "issue_comment", "pull_request_review").
+        x_hub_signature_256 (Optional[str]): The `X-Hub-Signature-256` header value when a webhook secret is configured (used for payload verification if implemented).
+        db (Session): Database session (injected via dependency) used to query and update Refinement records.
+    
+    Returns:
+        dict: A response object with keys:
+            - "success": `True` if the webhook was processed without error.
+            - "message": Short status message.
+            - "event": The GitHub event type received.
+    
+    Raises:
+        HTTPException: Raised with status 500 if processing fails.
     """
     try:
         payload = await request.json()
@@ -127,7 +133,14 @@ async def github_webhook(
 @router.get("/webhooks/setup-instructions")
 async def webhook_setup_instructions():
     """
-    Returns instructions for setting up webhooks
+    Provide setup instructions for installing the CodeRabbit GitHub App and for configuring a GitHub webhook endpoint.
+    
+    The response includes two sections:
+    - `coderabbit_setup`: steps and links for installing and configuring the CodeRabbit GitHub App.
+    - `github_webhook_setup`: guidance and the webhook URL (constructed from the incoming request URL) for subscribing to Pull Request, Pull Request Review, and Issue Comment events.
+    
+    Returns:
+        dict: A mapping with keys `coderabbit_setup` and `github_webhook_setup`. `coderabbit_setup` contains installation steps, app URL, and config file location. `github_webhook_setup` contains the webhook purpose, GitHub UI steps, the webhook URL derived from the request, recommended events to subscribe to, and secret configuration advice.
     """
     return {
         "coderabbit_setup": {
