@@ -1,0 +1,61 @@
+# CodeRabbit Configuration for OPS-X Projects
+# This file should be added to the root of each generated project
+
+reviews:
+  # Auto-review every PR
+  auto_review:
+    enabled: true
+    
+  # Request changes for critical issues
+  request_changes_workflow: true
+  
+  # Pre-merge checks to enforce quality
+  pre_merge_checks:
+    # Built-in checks
+    title:
+      mode: "warning"
+      requirements: "PR title must be descriptive and start with a verb (e.g., Fix, Add, Update)"
+    
+    description:
+      mode: "warning"
+    
+    docstrings:
+      mode: "warning"
+      threshold: 70
+    
+    issue_assessment:
+      mode: "warning"
+    
+    # Custom checks for OPS-X projects
+    custom_checks:
+      - name: "Breaking Changes Documentation"
+        mode: "error"
+        instructions: "All breaking changes to APIs, database schemas, or environment variables must be documented in the PR description under a 'Breaking Changes' section."
+      
+      - name: "Security Review"
+        mode: "error"
+        instructions: "Flag PRs that introduce: hardcoded credentials, exposed API keys, SQL injection risks, XSS vulnerabilities, or insecure authentication patterns."
+      
+      - name: "Code Quality Standards"
+        mode: "warning"
+        instructions: "Ensure: no console.log in production code, proper error handling, TypeScript types instead of 'any', and proper async/await usage instead of .then()."
+      
+      - name: "Test Coverage"
+        mode: "warning"
+        instructions: "PRs modifying core logic (auth, payments, data processing) should include tests. Flag if tests are missing for business-critical changes."
+      
+      - name: "OPS-X Best Practices"
+        mode: "warning"
+        instructions: "Verify: React components use proper hooks, Next.js API routes have error handling, FastAPI endpoints return proper status codes, and database queries use proper indexes."
+
+# Chat settings
+chat:
+  auto_reply: true
+  
+# Language-specific settings
+language:
+  python:
+    version: "3.11"
+  typescript:
+    version: "5.0"
+

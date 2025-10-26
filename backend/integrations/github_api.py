@@ -380,17 +380,19 @@ class GitHubAPIClient:
         base_branch: str = "main"
     ) -> Dict:
         """
-        Create a pull request
+        Create a pull request on the specified repository.
         
-        Args:
-            repo_full_name: Repository in format "username/repo-name"
-            title: PR title
-            body: PR description
-            head_branch: Branch with changes
-            base_branch: Target branch (default: main)
+        Parameters:
+            repo_full_name (str): Repository in the format "owner/repo".
+            title (str): Pull request title.
+            body (str): Pull request description/body.
+            head_branch (str): Name of the branch containing the changes.
+            base_branch (str): Target branch to merge into (default: "main").
         
         Returns:
-            {"success": bool, "pr_url": str, "pr_number": int}
+            dict: Result dictionary. `success` is `True` if the PR was created, `False` otherwise.
+                On success includes `pr_url` (str) and `pr_number` (int).
+                On failure includes `error` (str) with the API response text.
         """
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -417,6 +419,96 @@ class GitHubAPIClient:
                     "success": False,
                     "error": f"Failed to create PR: {response.text}"
                 }
+    
+    async def push_coderabbit_config(self, repo_full_name: str, branch: str = "main") -> Dict:
+        """
+        Pushes the local CodeRabbit configuration file into the repository at `.coderabbit.yaml`.
+        
+        Reads the local deployment/coderabbit.yaml file and creates or updates `.coderabbit.yaml` on the specified branch of the target repository using the content API. Prints a brief success or error message.
+        
+        Parameters:
+            repo_full_name (str): Repository identifier in "owner/name" format.
+            branch (str): Target branch to push the configuration to (default "main").
+        
+        Returns:
+            dict: Result object with a `success` boolean. On success may include `commit_sha` (or other metadata returned by the content API). On failure includes an `error` string; if the local config is missing the `error` will be "Config file not found".
+        """
+        import os
+        config_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "deployment",
+            "coderabbit.yaml"
+        )
+        
+        try:
+            with open(config_path, "r") as f:
+                config_content = f.read()
+            
+            result = await self.create_or_update_file(
+                repo_full_name=repo_full_name,
+                file_path=".coderabbit.yaml",
+                content=config_content,
+                message="Add CodeRabbit configuration for automated PR reviews",
+                branch=branch
+            )
+            
+            if result.get("success"):
+                print(f"✓ Pushed .coderabbit.yaml to {repo_full_name}")
+            else:
+                print(f"✗ Failed to push .coderabbit.yaml: {result.get('error')}")
+            
+            return result
+        except FileNotFoundError:
+            print(f"✗ CodeRabbit config not found at {config_path}")
+            return {"success": False, "error": "Config file not found"}
+        except Exception as e:
+            print(f"✗ Error pushing CodeRabbit config: {str(e)}")
+            return {"success": False, "error": str(e)}
+    
+    async def push_github_workflows(self, repo_full_name: str, branch: str = "main") -> Dict:
+        """
+        Pushes a local GitHub Actions workflow file into the target repository.
+        
+        Reads the local deployment/github-auto-merge.yml file and creates or updates .github/workflows/auto-merge.yml on the specified branch of the given repository.
+        
+        Parameters:
+        	repo_full_name (str): Full repository name in the form "owner/repo".
+        	branch (str): Target branch to push the workflow to (defaults to "main").
+        
+        Returns:
+        	result (dict): Result dictionary from the file operation. On success contains {"success": True, "commit_sha": ...}; on failure contains {"success": False, "error": "<message>"}.
+        """
+        import os
+        workflow_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "deployment",
+            "github-auto-merge.yml"
+        )
+        
+        try:
+            with open(workflow_path, "r") as f:
+                workflow_content = f.read()
+            
+            result = await self.create_or_update_file(
+                repo_full_name=repo_full_name,
+                file_path=".github/workflows/auto-merge.yml",
+                content=workflow_content,
+                message="Add auto-merge workflow for approved PRs",
+                branch=branch
+            )
+            
+            if result.get("success"):
+                print(f"✓ Pushed auto-merge workflow to {repo_full_name}")
+            else:
+                print(f"✗ Failed to push auto-merge workflow: {result.get('error')}")
+            
+            return result
+        except FileNotFoundError:
+            print(f"✗ Auto-merge workflow not found at {workflow_path}")
+            return {"success": False, "error": "Workflow file not found"}
+        except Exception as e:
+            print(f"✗ Error pushing auto-merge workflow: {str(e)}")
+            return {"success": False, "error": str(e)}
 
 
 # Singleton instance
