@@ -6,27 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Loader2, Zap, GitBranch, Users, Rocket, LogIn } from "lucide-react";
+import { Sparkles, Loader2, Zap, GitBranch, Users, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { AuthModal } from "@/components/AuthModal";
-import { isAuthenticated, getCurrentUser, logout, type User } from "@/lib/auth";
+import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 
 export function LandingHero() {
   const router = useRouter();
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [isBuilding, setIsBuilding] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-
-  // Check if user is already logged in
-  useEffect(() => {
-    const user = getCurrentUser();
-    if (user) {
-      setCurrentUser(user);
-    }
-  }, []);
 
   const handleGenerate = async () => {
     if (!projectName.trim() || !description.trim()) {
@@ -50,12 +39,6 @@ export function LandingHero() {
     }
   };
 
-  const handleAuthSuccess = (user: User) => {
-    setCurrentUser(user);
-    toast.success(`Welcome, ${user.name}!`);
-    // User can now navigate to team dashboard if they have a project
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -65,26 +48,17 @@ export function LandingHero() {
             <Sparkles className="w-6 h-6 text-purple-600" />
             <h1 className="text-xl font-bold">OPS-X</h1>
           </div>
-          <div>
-            {currentUser ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">
-                  {currentUser.name}
-                </span>
-                <Button variant="outline" size="sm" onClick={logout}>
-                  Logout
+          <div className="flex items-center gap-4">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button variant="outline" size="sm">
+                  Sign In
                 </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAuthModal(true)}
-              >
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign In
-              </Button>
-            )}
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton afterSignOutUrl="/" />
+            </SignedIn>
           </div>
         </div>
       </header>
@@ -221,13 +195,6 @@ export function LandingHero() {
           <span>Powered by v0.dev, Google Gemini, Fetch.ai & more</span>
         </div>
       </footer>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={handleAuthSuccess}
-      />
     </div>
   );
 }

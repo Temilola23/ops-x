@@ -8,8 +8,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Users, UserPlus, Mail, Calendar } from 'lucide-react'
-import { isAuthenticated, getCurrentUser, logout } from '@/lib/auth'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter 
+} from '@/components/ui/dialog'
+import { Users, UserPlus, Mail, Calendar, RefreshCw, Trash2, Loader2 } from 'lucide-react'
+import { useUser } from '@clerk/nextjs'
+import { toast } from 'sonner'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -18,6 +27,7 @@ interface Stakeholder {
   name: string
   email: string
   role: string
+  status?: string
   github_branch: string | null
   created_at: string
 }
@@ -26,6 +36,7 @@ export default function TeamDashboard() {
   const params = useParams()
   const router = useRouter()
   const projectId = params.projectId as string
+  const { user, isLoaded } = useUser()
 
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([])
   const [showInvite, setShowInvite] = useState(false)
@@ -35,17 +46,19 @@ export default function TeamDashboard() {
     email: '',
     role: 'Frontend'
   })
-  const [inviteMessage, setInviteMessage] = useState('')
+  
+  // Delete confirmation dialog
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean
+    stakeholder: Stakeholder | null
+  }>({ open: false, stakeholder: null })
+
+  // Resend invite state
+  const [resendingId, setResendingId] = useState<number | null>(null)
 
   useEffect(() => {
-    // Check auth
-    if (!isAuthenticated()) {
-      router.push('/')
-      return
-    }
-    
     loadStakeholders()
-  }, [projectId, router])
+  }, [projectId])
 
   const loadStakeholders = async () => {
     try {
@@ -56,17 +69,17 @@ export default function TeamDashboard() {
       }
     } catch (err) {
       console.error('Failed to load stakeholders:', err)
+      toast.error('Failed to load team members')
     }
   }
 
   const handleInvite = async () => {
     if (!inviteForm.name || !inviteForm.email) {
-      alert('Please fill in all fields')
+      toast.error('Please fill in all fields')
       return
     }
 
     setLoading(true)
-    setInviteMessage('')
 
     try {
       const res = await fetch(`${API_URL}/api/projects/${projectId}/invite`, {
@@ -78,22 +91,76 @@ export default function TeamDashboard() {
       const data = await res.json()
       
       if (data.success) {
-        setInviteMessage(data.data.message)
+        toast.success(data.data.message || 'Invitation sent successfully!')
         loadStakeholders()
         
-        // Reset form after 5 seconds
+        // Reset form
         setTimeout(() => {
           setShowInvite(false)
-          setInviteMessage('')
           setInviteForm({ name: '', email: '', role: 'Frontend' })
-        }, 5000)
+        }, 1500)
       } else {
-        alert(data.error || 'Failed to send invitation')
+        toast.error(data.error || 'Failed to send invitation')
       }
     } catch (err) {
-      alert('Network error. Please try again.')
+      toast.error('Network error. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleResendInvite = async (stakeholder: Stakeholder) => {
+    setResendingId(stakeholder.id)
+
+    try {
+      const res = await fetch(`${API_URL}/api/projects/${projectId}/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: stakeholder.name,
+          email: stakeholder.email,
+          role: stakeholder.role
+        })
+      })
+
+      const data = await res.json()
+      
+      if (data.success) {
+        toast.success(`Invitation resent to ${stakeholder.email}`)
+      } else {
+        toast.error(data.error || 'Failed to resend invitation')
+      }
+    } catch (err) {
+      toast.error('Network error. Please try again.')
+    } finally {
+      setResendingId(null)
+    }
+  }
+
+  const confirmDelete = (stakeholder: Stakeholder) => {
+    setDeleteDialog({ open: true, stakeholder })
+  }
+
+  const handleDelete = async () => {
+    if (!deleteDialog.stakeholder) return
+
+    try {
+      const res = await fetch(`${API_URL}/api/projects/${projectId}/stakeholders/${deleteDialog.stakeholder.id}`, {
+        method: 'DELETE'
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        toast.success(`${deleteDialog.stakeholder.name} removed from team`)
+        loadStakeholders()
+      } else {
+        toast.error(data.error || 'Failed to remove team member')
+      }
+    } catch (err) {
+      toast.error('Failed to remove team member')
+    } finally {
+      setDeleteDialog({ open: false, stakeholder: null })
     }
   }
 
@@ -108,7 +175,15 @@ export default function TeamDashboard() {
     return colors[role] || 'bg-gray-500 hover:bg-gray-600'
   }
 
-  const user = getCurrentUser()
+  const getStatusBadgeColor = (status?: string) => {
+    if (status === 'active') return 'bg-green-100 text-green-800'
+    if (status === 'pending') return 'bg-yellow-100 text-yellow-800'
+    return 'bg-gray-100 text-gray-800'
+  }
+
+  if (!isLoaded) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
@@ -118,17 +193,15 @@ export default function TeamDashboard() {
           <div className="flex items-center gap-3">
             <Users className="h-6 w-6 text-purple-600" />
             <h1 className="text-2xl font-bold">Team Management</h1>
-          </div>
-          <div className="flex items-center gap-4">
             {user && (
-              <span className="text-sm text-muted-foreground">
-                {user.name} ({user.email})
-              </span>
+              <Badge variant="outline" className="ml-2">
+                {user.emailAddresses[0]?.emailAddress}
+              </Badge>
             )}
-            <Button variant="outline" onClick={logout}>
-              Logout
-            </Button>
           </div>
+          <Button variant="outline" onClick={() => router.push('/')}>
+            Back to Home
+          </Button>
         </div>
       </header>
 
@@ -151,12 +224,12 @@ export default function TeamDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">With Branches</p>
+                  <p className="text-sm text-muted-foreground">Active</p>
                   <p className="text-3xl font-bold">
-                    {stakeholders.filter(s => s.github_branch).length}
+                    {stakeholders.filter(s => s.status === 'active').length}
                   </p>
                 </div>
-                <Calendar className="h-10 w-10 text-blue-600 opacity-50" />
+                <Calendar className="h-10 w-10 text-green-600 opacity-50" />
               </div>
             </CardContent>
           </Card>
@@ -167,10 +240,10 @@ export default function TeamDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">Pending</p>
                   <p className="text-3xl font-bold">
-                    {stakeholders.filter(s => !s.github_branch).length}
+                    {stakeholders.filter(s => s.status !== 'active').length}
                   </p>
                 </div>
-                <Mail className="h-10 w-10 text-pink-600 opacity-50" />
+                <Mail className="h-10 w-10 text-yellow-600 opacity-50" />
               </div>
             </CardContent>
           </Card>
@@ -216,7 +289,7 @@ export default function TeamDashboard() {
                     type="email"
                     value={inviteForm.email}
                     onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                    placeholder="john@example.com"
+                    placeholder="john.doe@example.com"
                     disabled={loading}
                   />
                 </div>
@@ -230,7 +303,7 @@ export default function TeamDashboard() {
                   disabled={loading}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
+                    <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Founder">Founder</SelectItem>
@@ -242,19 +315,19 @@ export default function TeamDashboard() {
                 </Select>
               </div>
 
-              {inviteMessage && (
-                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <p className="text-sm font-semibold text-green-800">Invitation Sent!</p>
-                  <p className="text-xs text-green-600 mt-1">{inviteMessage}</p>
-                </div>
-              )}
-
               <Button
                 onClick={handleInvite}
                 disabled={!inviteForm.name || !inviteForm.email || loading}
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               >
-                {loading ? 'Sending Invitation...' : 'Send Invitation'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending Invitation...
+                  </>
+                ) : (
+                  'Send Invitation'
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -271,7 +344,14 @@ export default function TeamDashboard() {
                   </div>
                   
                   <div>
-                    <h3 className="font-semibold text-lg">{member.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-lg">{member.name}</h3>
+                      {member.status && (
+                        <Badge className={getStatusBadgeColor(member.status)}>
+                          {member.status}
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">{member.email}</p>
                     {member.github_branch && (
                       <p className="text-xs text-blue-600 mt-1 font-mono">
@@ -281,27 +361,85 @@ export default function TeamDashboard() {
                   </div>
                 </div>
 
-                <Badge className={`${getRoleBadgeColor(member.role)} text-white`}>
-                  {member.role}
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Badge className={`${getRoleBadgeColor(member.role)} text-white`}>
+                    {member.role}
+                  </Badge>
+                  
+                  {/* Resend invite button for pending members */}
+                  {member.status !== 'active' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleResendInvite(member)}
+                      disabled={resendingId === member.id}
+                      className="h-8"
+                    >
+                      {resendingId === member.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Resend
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  
+                  {/* Delete button (only for admins/owner) */}
+                  {user && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => confirmDelete(member)}
+                      className="h-8"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
 
           {stakeholders.length === 0 && !showInvite && (
             <Card>
-              <CardContent className="p-12 text-center">
-                <Users className="h-16 w-16 mx-auto text-muted-foreground opacity-50 mb-4" />
-                <p className="text-lg font-semibold text-muted-foreground">No team members yet</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Click "Invite Member" to add your first team member!
-                </p>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                No team members yet. Invite the first one!
               </CardContent>
             </Card>
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, stakeholder: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Team Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove <strong>{deleteDialog.stakeholder?.name}</strong> from the team?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialog({ open: false, stakeholder: null })}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Remove Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
-

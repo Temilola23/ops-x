@@ -16,8 +16,8 @@ DEFAULT_ENV = {
     "JANITOR_API_KEY": "calhacks2047",
     "FETCHAI_API_KEY": "sk_f1565b8c1c934a7ab641446e5b1f4159fb14f45afe964224b90e7f6cfedd55a5",
     "FETCHAI_ENDPOINT": "https://agentverse.ai",
-    "RESEND_API_KEY": "your_resend_api_key_here",
-    "RESEND_FROM_EMAIL": "OPS-X <onboarding@resend.dev>",
+    "SENDGRID_API_KEY": "your_sendgrid_api_key_here",
+    "SENDGRID_FROM_EMAIL": "noreply@opsx.dev",
     "DATABASE_URL": "postgresql://localhost:5432/opsx_db",
     "CHROMA_PERSIST_DIR": "./chroma_data",
     "CHROMA_HOST": "localhost",
@@ -50,7 +50,7 @@ def save_env(filepath, env_vars):
         f.write("# API Keys\n")
         for key in ["CREAO_INVITATION_CODE", "GITHUB_TOKEN", "POSTMAN_API_KEY", 
                     "DEEPGRAM_API_KEY", "GEMINI_API_KEY", "V0_API_KEY", "VERCEL_TOKEN",
-                    "RESEND_API_KEY", "RESEND_FROM_EMAIL"]:
+                    "SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"]:
             if key in env_vars:
                 f.write(f"{key}={env_vars[key]}\n")
         
