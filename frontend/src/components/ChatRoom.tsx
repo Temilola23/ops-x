@@ -13,7 +13,8 @@ import { formatDistanceToNow } from "date-fns";
 import type { StakeholderRole, ChatMessage as ChatMessageType } from "@/types";
 
 interface ChatRoomProps {
-  chatId: string;
+  projectId: string;
+  stakeholderId: number;
   userRole: StakeholderRole;
   userName: string;
 }
@@ -55,17 +56,26 @@ function ChatMessage({ message }: { message: ChatMessageType }) {
           </span>
         </div>
         <p className="text-sm text-foreground whitespace-pre-wrap">
-          {message.text}
+          {message.message || message.text}
         </p>
       </div>
     </div>
   );
 }
 
-export function ChatRoom({ chatId, userRole, userName }: ChatRoomProps) {
+export function ChatRoom({
+  projectId,
+  stakeholderId,
+  userRole,
+  userName,
+}: ChatRoomProps) {
   const [inputMessage, setInputMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { messages, sendMessage, isSending } = useChatRoom(chatId, userRole);
+  const { messages, sendMessage, isSending } = useChatRoom({
+    projectId,
+    stakeholderId,
+    userRole,
+  });
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

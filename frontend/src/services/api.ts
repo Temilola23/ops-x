@@ -170,20 +170,27 @@ class ApiClient {
     return data;
   }
 
-  async getChatMessages(chatId: string): Promise<ApiResponse<ChatMessage[]>> {
-    const { data } = await this.client.get(`/api/chats/${chatId}/messages`);
+  async getChatMessages(
+    projectId: string
+  ): Promise<ApiResponse<ChatMessage[]>> {
+    const { data } = await this.client.get(
+      `/api/projects/${projectId}/chat/messages`
+    );
     return data;
   }
 
   async sendChatMessage(
-    chatId: string,
-    role: string,
-    text: string
+    projectId: string,
+    stakeholderId: number,
+    message: string
   ): Promise<ApiResponse<ChatMessage>> {
-    const { data } = await this.client.post(`/api/chats/${chatId}/messages`, {
-      role,
-      text,
-    });
+    const { data } = await this.client.post(
+      `/api/projects/${projectId}/chat/message`,
+      {
+        message,
+        stakeholder_id: stakeholderId,
+      }
+    );
     return data;
   }
 

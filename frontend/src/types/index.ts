@@ -39,14 +39,17 @@ export interface Stakeholder {
 
 // Chat types
 export interface ChatMessage {
-  id: string;
-  chat_id: string;
+  id: number;
+  project_id: number;
+  chat_id?: string; // Legacy - not used in new system
   role: StakeholderRole;
-  author_id: string;
+  author_id?: string; // Legacy
   author_name: string;
-  text: string;
-  timestamp: Date;
-  is_ai?: boolean;
+  message?: string; // New field name
+  text?: string; // Legacy - kept for compatibility
+  timestamp: string;
+  created_at?: string;
+  is_ai: boolean;
 }
 
 export interface ChatRoom {
