@@ -3,29 +3,40 @@ Chroma DB Integration for Code Embeddings
 Semantic code search powered by Chroma
 """
 
-import os
-import chromadb
-from typing import List, Dict, Optional
 import hashlib
+import os
+from threading import Lock
+from typing import Dict, List, Optional
+
+import chromadb
+
+
+COLLECTION_NAME = "code_embeddings_bge_small_v1"
+EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+EMBEDDING_DIMENSION = 384
+_embedding_model = None
+_embedding_model_lock = Lock()
 
 
 class ChromaCodeSearch:
     """Semantic code search using Chroma DB"""
     
-    def __init__(self):
+    def __init__(self, persist_directory: Optional[str] = None):
         """Initialize Chroma client and collection"""
         
         # Persistent storage location
-        persist_directory = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
+        persist_directory = persist_directory or os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
         
         # Initialize Chroma client (new API - no Settings needed)
         self.client = chromadb.PersistentClient(path=persist_directory)
         
         # Get or create collection for code embeddings
         self.collection = self.client.get_or_create_collection(
-            name="code_embeddings",
+            name=COLLECTION_NAME,
             metadata={
-                "description": "OPS-X semantic code search",
+                "description": "OPS-X semantic code search using BGE small v1.5",
+                "embedding_model": EMBEDDING_MODEL_NAME,
+                "embedding_dimension": EMBEDDING_DIMENSION,
                 "hnsw:space": "cosine"  # Use cosine similarity
             }
         )
@@ -61,7 +72,7 @@ class ChromaCodeSearch:
         snippet = content[:1000] if len(content) > 1000 else content
         
         try:
-            self.collection.add(
+            self.collection.upsert(
                 ids=[chroma_id],
                 embeddings=[embedding],
                 documents=[snippet],
@@ -183,23 +194,24 @@ except Exception as e:
     chroma_search = None
 
 
-# Helper function to generate embeddings (placeholder)
+# Lazily initialized so importing the backend does not download model weights.
+def _get_embedding_model():
+    global _embedding_model
+
+    if _embedding_model is None:
+        with _embedding_model_lock:
+            if _embedding_model is None:
+                from fastembed import TextEmbedding
+
+                _embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL_NAME)
+
+    return _embedding_model
+
+
 def generate_embedding(text: str) -> List[float]:
-    """
-    Generate embedding for text
-    TODO: Replace with actual embedding model (OpenAI, Sentence Transformers, etc.)
-    
-    For now, returns a dummy embedding for testing
-    """
-    # This is a placeholder - integrate with actual embedding model
-    # Options:
-    # 1. OpenAI: openai.Embedding.create(input=text, model="text-embedding-ada-002")
-    # 2. Sentence Transformers: model.encode(text)
-    # 3. Google Gemini embeddings
-    
-    import random
-    random.seed(hash(text) % 2**32)
-    return [random.random() for _ in range(384)]  # Standard embedding dimension
+    """Generate a BGE small v1.5 embedding using the shared local model."""
+    embedding = next(_get_embedding_model().embed([text]))
+    return embedding.tolist()
 
 
 if __name__ == "__main__":

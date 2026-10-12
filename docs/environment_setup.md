@@ -55,6 +55,19 @@ DEEPGRAM_API_KEY=your_deepgram_api_key
 POSTMAN_API_KEY=your_postman_api_key
 ```
 
+## Local Semantic Search Model
+
+Code search uses FastEmbed with `BAAI/bge-small-en-v1.5`. The model runs locally and
+does not require an API key. The first embedding request downloads the model files
+from Hugging Face into FastEmbed's local cache, so a network connection is needed
+for the initial run. Subsequent runs use the cached model; keep the cache available
+for offline use. The backend loads the model lazily, so starting the server alone
+does not trigger the download.
+
+The updated search index uses the versioned Chroma collection
+`code_embeddings_bge_small_v1`. Existing `code_embeddings` data is left untouched;
+files must be indexed again to populate the new collection with real embeddings.
+
 ## Frontend Environment Variables
 
 Create `frontend/.env.local`:
